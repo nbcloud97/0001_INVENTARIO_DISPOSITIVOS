@@ -115,6 +115,33 @@ export const api = {
   },
 
   getAttachmentDownloadUrl: (attachmentId: string) => `${API_BASE}/systems/attachments/${attachmentId}/download`,
+  getAttachmentPreviewUrl: (attachmentId: string) => `${API_BASE}/systems/attachments/${attachmentId}/preview`,
+
+  getAttachmentBlob: async (attachmentId: string): Promise<Blob> => {
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`${API_BASE}/systems/attachments/${attachmentId}/preview`, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+    if (!response.ok) {
+      throw new Error('No se pudo cargar la previsualización del archivo.');
+    }
+    return response.blob();
+  },
+
+  getAttachmentText: async (attachmentId: string): Promise<string> => {
+    const token = localStorage.getItem('auth_token');
+    const response = await fetch(`${API_BASE}/systems/attachments/${attachmentId}/preview`, {
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+    if (!response.ok) {
+      throw new Error('No se pudo obtener el contenido de texto del archivo.');
+    }
+    return response.text();
+  },
 
   deleteSystemAttachment: (id: string) => fetchJson<{ message: string }>(`/systems/attachments/${id}`, { method: 'DELETE' }),
 

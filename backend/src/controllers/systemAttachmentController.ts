@@ -79,6 +79,26 @@ export class SystemAttachmentController {
     }
   }
 
+  static async preview(req: Request, res: Response) {
+    try {
+      const attachment = await SystemAttachmentService.getById(req.params.id);
+      if (!attachment) {
+        return res.status(404).json({ success: false, error: 'Adjunto no encontrado' });
+      }
+
+      if (!fs.existsSync(attachment.filePath)) {
+        return res.status(404).json({ success: false, error: 'El archivo físico no se encuentra en el servidor' });
+      }
+
+      const mimeType = attachment.mimeType || 'application/octet-stream';
+      res.setHeader('Content-Type', mimeType);
+      res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(attachment.filename)}"`);
+      return res.sendFile(path.resolve(attachment.filePath));
+    } catch (error: any) {
+      return res.status(500).json({ success: false, error: error.message });
+    }
+  }
+
   static async delete(req: Request, res: Response) {
     try {
       await SystemAttachmentService.delete(req.params.id);

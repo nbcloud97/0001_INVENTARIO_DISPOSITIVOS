@@ -44,6 +44,7 @@ apiRouter.delete('/systems/notes/:id', SystemNoteController.delete);
 apiRouter.get('/systems/:systemId/attachments', SystemAttachmentController.getBySystemId);
 apiRouter.post('/systems/attachments', uploadMiddleware, SystemAttachmentController.upload);
 apiRouter.get('/systems/attachments/:id/download', SystemAttachmentController.download);
+apiRouter.get('/systems/attachments/:id/preview', SystemAttachmentController.preview);
 apiRouter.delete('/systems/attachments/:id', SystemAttachmentController.delete);
 
 // Rutas de Dispositivos

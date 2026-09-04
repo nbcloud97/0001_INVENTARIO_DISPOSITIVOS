@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Upload, Paperclip, FileText, Image as ImageIcon, FileSpreadsheet, Archive, Trash2, Download, Calendar, File } from 'lucide-react';
+import { Search, Upload, Paperclip, FileText, Image as ImageIcon, FileSpreadsheet, Archive, Trash2, Download, Calendar, File, Eye } from 'lucide-react';
 import { SystemAttachment } from '../types';
 import { api } from '../services/api';
+import { AttachmentPreviewModal } from './AttachmentPreviewModal';
 
 interface SystemAttachmentsViewProps {
   systemId: string;
@@ -14,6 +15,7 @@ export const SystemAttachmentsView: React.FC<SystemAttachmentsViewProps> = ({ sy
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [previewAttachment, setPreviewAttachment] = useState<SystemAttachment | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadAttachments = async () => {
@@ -178,10 +180,22 @@ export const SystemAttachmentsView: React.FC<SystemAttachmentsViewProps> = ({ sy
                   <tr key={file.id}>
                     {/* Nombre del archivo con icono según su tipo */}
                     <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                      <div
+                        style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', cursor: 'pointer' }}
+                        onClick={() => setPreviewAttachment(file)}
+                        title="Hacer clic para previsualizar archivo"
+                      >
                         {getFileIcon(file.filename, file.mimeType)}
                         <div>
-                          <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.9rem' }}>
+                          <div
+                            style={{
+                              fontWeight: 600,
+                              color: 'var(--text-primary)',
+                              fontSize: '0.9rem',
+                              transition: 'color 0.2s',
+                            }}
+                            className="filename-link"
+                          >
                             {file.filename}
                           </div>
                           <div style={{ fontSize: '0.725rem', color: 'var(--text-muted)' }}>
@@ -206,15 +220,22 @@ export const SystemAttachmentsView: React.FC<SystemAttachmentsViewProps> = ({ sy
                       </div>
                     </td>
 
-                    {/* Acciones: Descargar & Eliminar */}
+                    {/* Acciones: Previsualizar, Descargar & Eliminar */}
                     <td style={{ textAlign: 'right' }}>
                       <div style={{ display: 'inline-flex', gap: '0.35rem' }}>
+                        <button
+                          className="btn btn-secondary btn-icon"
+                          title="Previsualizar archivo"
+                          onClick={() => setPreviewAttachment(file)}
+                        >
+                          <Eye size={15} color="var(--accent-purple)" />
+                        </button>
                         <a
                           href={api.getAttachmentDownloadUrl(file.id)}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="btn btn-secondary btn-icon"
-                          title="Descargar o ver archivo"
+                          title="Descargar archivo"
                           download={file.filename}
                           style={{ textDecoration: 'none' }}
                         >
@@ -236,6 +257,13 @@ export const SystemAttachmentsView: React.FC<SystemAttachmentsViewProps> = ({ sy
           </div>
         )}
       </div>
+
+      {/* Modal de Previsualización */}
+      <AttachmentPreviewModal
+        isOpen={Boolean(previewAttachment)}
+        onClose={() => setPreviewAttachment(null)}
+        attachment={previewAttachment}
+      />
     </div>
   );
 };
