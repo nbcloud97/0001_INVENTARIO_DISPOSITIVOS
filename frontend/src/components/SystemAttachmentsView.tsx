@@ -3,6 +3,7 @@ import { Search, Upload, Paperclip, FileText, Image as ImageIcon, FileSpreadshee
 import { SystemAttachment } from '../types';
 import { api } from '../services/api';
 import { AttachmentPreviewModal } from './AttachmentPreviewModal';
+import { ConfirmModal } from './ConfirmModal';
 
 interface SystemAttachmentsViewProps {
   systemId: string;
@@ -18,6 +19,8 @@ export const SystemAttachmentsView: React.FC<SystemAttachmentsViewProps> = ({ sy
   const [previewAttachment, setPreviewAttachment] = useState<SystemAttachment | null>(null);
   const [editingAttachmentId, setEditingAttachmentId] = useState<string | null>(null);
   const [editingFilename, setEditingFilename] = useState('');
+  const [attachmentToDelete, setAttachmentToDelete] = useState<SystemAttachment | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadAttachments = async () => {
@@ -44,7 +47,6 @@ export const SystemAttachmentsView: React.FC<SystemAttachmentsViewProps> = ({ sy
 
     setUploading(true);
     setError(null);
-
     try {
       await api.uploadSystemAttachment(systemId, file);
       loadAttachments();
@@ -56,13 +58,20 @@ export const SystemAttachmentsView: React.FC<SystemAttachmentsViewProps> = ({ sy
     }
   };
 
-  const handleDelete = async (id: string, filename: string) => {
-    if (!window.confirm(`¿Deseas eliminar permanentemente el archivo "${filename}"?`)) return;
+  const handleConfirmDelete = async () => {
+    if (!attachmentToDelete) return;
+    setDeleteLoading(true);
     try {
-      await api.deleteSystemAttachment(id);
-      loadAttachments();
+      const targetId = attachmentToDelete.id;
+      setAttachments((prev) => prev.filter((a) => a.id !== targetId));
+      await api.deleteSystemAttachment(targetId);
+      setAttachmentToDelete(null);
+      await loadAttachments();
     } catch (err: any) {
       alert(`Error al eliminar archivo: ${err.message}`);
+      await loadAttachments();
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -324,9 +333,13 @@ export const SystemAttachmentsView: React.FC<SystemAttachmentsViewProps> = ({ sy
                             <Download size={15} color="var(--accent-blue)" />
                           </a>
                           <button
+                            type="button"
                             className="btn btn-danger btn-icon"
                             title="Eliminar archivo adjunto"
-                            onClick={() => handleDelete(file.id, file.filename)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setAttachmentToDelete(file);
+                            }}
                           >
                             <Trash2 size={15} />
                           </button>
@@ -346,6 +359,15 @@ export const SystemAttachmentsView: React.FC<SystemAttachmentsViewProps> = ({ sy
         isOpen={Boolean(previewAttachment)}
         onClose={() => setPreviewAttachment(null)}
         attachment={previewAttachment}
+      />
+
+      <ConfirmModal
+        isOpen={Boolean(attachmentToDelete)}
+        title="Eliminar Archivo Adjunto"
+        message={`¿Estás seguro de que deseas eliminar el archivo "${attachmentToDelete?.filename}"?`}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setAttachmentToDelete(null)}
+        loading={deleteLoading}
       />
     </div>
   );

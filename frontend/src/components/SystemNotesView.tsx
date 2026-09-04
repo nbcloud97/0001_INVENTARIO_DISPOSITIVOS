@@ -3,6 +3,7 @@ import { Search, Plus, FileText, Edit2, Trash2, Calendar } from 'lucide-react';
 import { SystemNote } from '../types';
 import { api } from '../services/api';
 import { SystemNoteModal } from './SystemNoteModal';
+import { ConfirmModal } from './ConfirmModal';
 
 interface SystemNotesViewProps {
   systemId: string;
@@ -15,6 +16,8 @@ export const SystemNotesView: React.FC<SystemNotesViewProps> = ({ systemId }) =>
   const [loading, setLoading] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [noteToEdit, setNoteToEdit] = useState<SystemNote | null>(null);
+  const [noteToDelete, setNoteToDelete] = useState<SystemNote | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const loadNotes = async () => {
     try {
@@ -34,15 +37,20 @@ export const SystemNotesView: React.FC<SystemNotesViewProps> = ({ systemId }) =>
     }
   }, [systemId]);
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm('¿Deseas eliminar esta nota permanentemente?')) return;
+  const handleConfirmDelete = async () => {
+    if (!noteToDelete) return;
+    setDeleteLoading(true);
     try {
-      setNotes((prev) => prev.filter((n) => n.id !== id));
-      await api.deleteSystemNote(id);
+      const targetId = noteToDelete.id;
+      setNotes((prev) => prev.filter((n) => n.id !== targetId));
+      await api.deleteSystemNote(targetId);
+      setNoteToDelete(null);
       await loadNotes();
     } catch (err: any) {
       alert(`Error al eliminar nota: ${err.message}`);
       await loadNotes();
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -164,7 +172,7 @@ export const SystemNotesView: React.FC<SystemNotesViewProps> = ({ systemId }) =>
                           title="Eliminar Nota"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleDelete(note.id);
+                            setNoteToDelete(note);
                           }}
                         >
                           <Trash2 size={15} />
@@ -185,6 +193,16 @@ export const SystemNotesView: React.FC<SystemNotesViewProps> = ({ systemId }) =>
         onSuccess={loadNotes}
         systemId={systemId}
         noteToEdit={noteToEdit}
+        onDelete={(note) => setNoteToDelete(note)}
+      />
+
+      <ConfirmModal
+        isOpen={Boolean(noteToDelete)}
+        title="Eliminar Nota del Sistema"
+        message={`¿Estás seguro de que deseas eliminar la nota "${noteToDelete?.title || 'NOTA GENERAL'}"?`}
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setNoteToDelete(null)}
+        loading={deleteLoading}
       />
     </div>
   );

@@ -9,6 +9,7 @@ interface SystemNoteModalProps {
   onSuccess: () => void;
   systemId: string;
   noteToEdit?: SystemNote | null;
+  onDelete?: (note: SystemNote) => void;
 }
 
 export const SystemNoteModal: React.FC<SystemNoteModalProps> = ({
@@ -17,6 +18,7 @@ export const SystemNoteModal: React.FC<SystemNoteModalProps> = ({
   onSuccess,
   systemId,
   noteToEdit,
+  onDelete,
 }) => {
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
@@ -114,6 +116,19 @@ export const SystemNoteModal: React.FC<SystemNoteModalProps> = ({
           </div>
 
           <div className="modal-footer">
+            {noteToEdit && onDelete && (
+              <button
+                type="button"
+                className="btn btn-danger"
+                style={{ marginRight: 'auto' }}
+                onClick={() => {
+                  onClose();
+                  onDelete(noteToEdit);
+                }}
+              >
+                Eliminar Nota
+              </button>
+            )}
             <button type="button" className="btn btn-secondary" onClick={onClose}>
               Cancelar
             </button>
