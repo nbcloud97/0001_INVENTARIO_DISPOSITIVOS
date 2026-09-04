@@ -1,0 +1,94 @@
+// Schema Prisma - Modelo System & User con autenticación
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  username     String   @unique
+  passwordHash String
+  name         String?
+  role         String   @default("ADMIN")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Client {
+  id        String   @id @default(uuid())
+  name      String   // Nombre Comercial (Obligatorio)
+  legalName String?  // Nombre Fiscal
+  cif       String?  // NIF
+  beta10Id  String?  // ID Beta10
+  notes     String?  // Notas
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  systems System[]
+  devices Device[]
+}
+
+model Subsystem {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  color       String   @default("#005596")
+  icon        String   @default("shield")
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  systems System[]
+  devices Device[]
+}
+
+model System {
+  id          String     @id @default(uuid())
+  name        String
+  code        String?
+  description String?
+  notes       String?    // Notas del Sistema
+  clientId    String
+  client      Client     @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  subsystemId String?
+  subsystem   Subsystem? @relation(fields: [subsystemId], references: [id])
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  devices Device[]
+
+  @@index([clientId])
+  @@index([subsystemId])
+}
+
+model Device {
+  id                   String    @id @default(uuid())
+  systemId             String
+  system               System    @relation(fields: [systemId], references: [id], onDelete: Cascade)
+  clientId             String
+  client               Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  subsystemId          String
+  subsystem            Subsystem @relation(fields: [subsystemId], references: [id])
+  brand                String?   // Opcional
+  model                String?   // Opcional
+  serialNumber         String?
+  assignedName         String    // Obligatorio
+  ipAddress            String?
+  macAddress           String?
+  credentialsEncrypted String?   // Formato JSON cifrado AES-256-GCM
+  rackCabinet          String?
+  switchName           String?
+  switchPort           String?
+  notes                String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@index([systemId])
+  @@index([clientId])
+  @@index([subsystemId])
+  @@index([ipAddress])
+  @@index([macAddress])
+}

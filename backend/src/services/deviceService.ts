@@ -1,0 +1,424 @@
+import { prisma } from '../config/prisma';
+import { encryptCredentials, decryptCredentials } from './cryptoService';
+
+export interface DeviceCredentialItem {
+  id?: string;
+  title?: string;
+  username?: string;
+  password?: string;
+  notes?: string;
+}
+
+export interface CreateDeviceInput {
+  systemId: string;
+  clientId?: string;
+  subsystemId: string;
+  brand?: string;
+  model?: string;
+  serialNumber?: string;
+  assignedName: string;
+  ipAddress?: string;
+  macAddress?: string;
+  credentials?: DeviceCredentialItem[];
+  rackCabinet?: string;
+  switchName?: string;
+  switchPort?: string;
+  notes?: string;
+}
+
+export interface BulkCreateDevicesInput {
+  systemId: string;
+  clientId?: string;
+  subsystemId: string;
+  brand?: string;
+  model?: string;
+  baseName?: string;
+  startNumber?: number;
+  count: number;
+  startIpAddress?: string;
+  rackCabinet?: string;
+  switchName?: string;
+  startSwitchPort?: number;
+  credentials?: DeviceCredentialItem[];
+  notes?: string;
+}
+
+export interface ImportDeviceItemInput {
+  subsystemName?: string;
+  subsystemId?: string;
+  assignedName?: string;
+  brand?: string;
+  model?: string;
+  serialNumber?: string;
+  ipAddress?: string;
+  macAddress?: string;
+  rackCabinet?: string;
+  switchName?: string;
+  switchPort?: string;
+  notes?: string;
+  credentials?: DeviceCredentialItem[];
+}
+
+export class DeviceService {
+  static async getAll(filters?: {
+    systemId?: string;
+    clientId?: string;
+    subsystemId?: string;
+    search?: string;
+    rackCabinet?: string;
+  }) {
+    const where: any = {};
+
+    if (filters?.systemId) where.systemId = filters.systemId;
+    if (filters?.clientId) where.clientId = filters.clientId;
+    if (filters?.subsystemId) where.subsystemId = filters.subsystemId;
+    if (filters?.rackCabinet) where.rackCabinet = filters.rackCabinet;
+
+    if (filters?.search) {
+      const term = filters.search.trim();
+      where.OR = [
+        { assignedName: { contains: term } },
+        { brand: { contains: term } },
+        { model: { contains: term } },
+        { serialNumber: { contains: term } },
+        { ipAddress: { contains: term } },
+        { macAddress: { contains: term } },
+        { rackCabinet: { contains: term } },
+        { switchName: { contains: term } },
+      ];
+    }
+
+    const devices = await prisma.device.findMany({
+      where,
+      include: {
+        system: { select: { id: true, name: true, code: true } },
+        client: { select: { id: true, name: true } },
+        subsystem: { select: { id: true, name: true, color: true, icon: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return devices.map((d) => {
+      let credsCount = 0;
+      if (d.credentialsEncrypted) {
+        try {
+          const decrypted = decryptCredentials(d.credentialsEncrypted);
+          if (Array.isArray(decrypted)) {
+            credsCount = decrypted.length;
+          } else if (decrypted && (decrypted.username || decrypted.password)) {
+            credsCount = 1;
+          }
+        } catch {
+          credsCount = 1;
+        }
+      }
+
+      return {
+        ...d,
+        hasCredentials: Boolean(d.credentialsEncrypted),
+        credentialsCount: credsCount,
+        credentialsEncrypted: undefined,
+      };
+    });
+  }
+
+  static async getById(id: string) {
+    const device = await prisma.device.findUnique({
+      where: { id },
+      include: {
+        system: true,
+        client: true,
+        subsystem: true,
+      },
+    });
+
+    if (!device) return null;
+
+    let credsCount = 0;
+    if (device.credentialsEncrypted) {
+      try {
+        const decrypted = decryptCredentials(device.credentialsEncrypted);
+        credsCount = Array.isArray(decrypted) ? decrypted.length : 1;
+      } catch {
+        credsCount = 1;
+      }
+    }
+
+    return {
+      ...device,
+      hasCredentials: Boolean(device.credentialsEncrypted),
+      credentialsCount: credsCount,
+      credentialsEncrypted: undefined,
+    };
+  }
+
+  static async getCredentials(id: string): Promise<DeviceCredentialItem[]> {
+    const device = await prisma.device.findUnique({
+      where: { id },
+      select: { credentialsEncrypted: true },
+    });
+
+    if (!device || !device.credentialsEncrypted) return [];
+    const decrypted = decryptCredentials(device.credentialsEncrypted);
+
+    if (Array.isArray(decrypted)) {
+      return decrypted;
+    } else if (decrypted && typeof decrypted === 'object') {
+      return [decrypted];
+    }
+    return [];
+  }
+
+  static async create(data: CreateDeviceInput) {
+    let credentialsEncrypted: string | undefined = undefined;
+
+    if (data.credentials && Array.isArray(data.credentials)) {
+      const validCreds = data.credentials.filter(c => c.username || c.password || c.title);
+      if (validCreds.length > 0) {
+        credentialsEncrypted = encryptCredentials(validCreds);
+      }
+    }
+
+    const system = await prisma.system.findUnique({ where: { id: data.systemId } });
+    if (!system) throw new Error('El sistema especificado no existe');
+
+    const clientId = data.clientId || system.clientId;
+    const subsystemId = data.subsystemId || system.subsystemId || undefined;
+
+    if (!subsystemId) throw new Error('Debes indicar un subsistema para el dispositivo');
+
+    const device = await prisma.device.create({
+      data: {
+        systemId: data.systemId,
+        clientId,
+        subsystemId,
+        brand: data.brand || null,
+        model: data.model || null,
+        serialNumber: data.serialNumber || null,
+        assignedName: data.assignedName,
+        ipAddress: data.ipAddress || null,
+        macAddress: data.macAddress || null,
+        credentialsEncrypted,
+        rackCabinet: data.rackCabinet || null,
+        switchName: data.switchName || null,
+        switchPort: data.switchPort || null,
+        notes: data.notes || null,
+      },
+      include: {
+        system: true,
+        client: true,
+        subsystem: true,
+      },
+    });
+
+    return {
+      ...device,
+      hasCredentials: Boolean(device.credentialsEncrypted),
+      credentialsEncrypted: undefined,
+    };
+  }
+
+  static async createBulk(data: BulkCreateDevicesInput) {
+    const {
+      systemId,
+      subsystemId,
+      brand,
+      model,
+      baseName,
+      startNumber = 1,
+      count,
+      startIpAddress,
+      rackCabinet,
+      switchName,
+      startSwitchPort = 1,
+      credentials,
+      notes,
+    } = data;
+
+    const system = await prisma.system.findUnique({ where: { id: systemId } });
+    if (!system) throw new Error('El sistema especificado no existe');
+
+    const clientId = data.clientId || system.clientId;
+
+    // Obtener subsistema para derivar un prefijo de nombre limpio si baseName no se especificó
+    const subsystem = await prisma.subsystem.findUnique({ where: { id: subsystemId } });
+    const prefix = (baseName || subsystem?.name || 'EQUIPO').replace(/[^a-zA-Z0-9_-]/g, '_').toUpperCase();
+
+    let credentialsEncrypted: string | undefined = undefined;
+    if (credentials && Array.isArray(credentials)) {
+      const validCreds = credentials.filter(c => c.username || c.password || c.title);
+      if (validCreds.length > 0) {
+        credentialsEncrypted = encryptCredentials(validCreds);
+      }
+    }
+
+    let currentIpParts: number[] | null = null;
+    if (startIpAddress) {
+      currentIpParts = startIpAddress.split('.').map(Number);
+      if (currentIpParts.length !== 4 || currentIpParts.some(isNaN)) {
+        throw new Error('Dirección IP de inicio no válida');
+      }
+    }
+
+    const devicesToCreate = [];
+
+    for (let i = 0; i < count; i++) {
+      const currentNum = startNumber + i;
+      const numSuffix = currentNum < 10 ? `0${currentNum}` : `${currentNum}`;
+      const assignedName = `${prefix}_${numSuffix}`;
+
+      let ipAddress: string | undefined = undefined;
+      if (currentIpParts) {
+        ipAddress = `${currentIpParts[0]}.${currentIpParts[1]}.${currentIpParts[2]}.${currentIpParts[3] + i}`;
+      }
+
+      let switchPort: string | undefined = undefined;
+      if (startSwitchPort !== undefined && switchName) {
+        switchPort = `PUERTO ${startSwitchPort + i}`;
+      }
+
+      devicesToCreate.push({
+        systemId,
+        clientId,
+        subsystemId,
+        brand: brand || null,
+        model: model || null,
+        serialNumber: undefined,
+        assignedName,
+        ipAddress,
+        macAddress: undefined,
+        credentialsEncrypted,
+        rackCabinet: rackCabinet || null,
+        switchName: switchName || null,
+        switchPort,
+        notes: notes || null,
+      });
+    }
+
+    const result = await prisma.device.createMany({
+      data: devicesToCreate,
+    });
+
+    return {
+      count: result.count,
+      message: `Se han registrado exitosamente ${result.count} dispositivos en el sistema`,
+    };
+  }
+
+  static async importDevices(systemId: string, items: ImportDeviceItemInput[]) {
+    const system = await prisma.system.findUnique({ where: { id: systemId } });
+    if (!system) throw new Error('El sistema especificado no existe');
+
+    const allSubsystems = await prisma.subsystem.findMany();
+    const defaultSubsystem = allSubsystems[0];
+    if (!defaultSubsystem) throw new Error('No hay subsistemas registrados en la aplicación');
+
+    const devicesToCreate = items.map((item, index) => {
+      // Buscar subsistema coincidente por nombre (o id)
+      let resolvedSubsystemId = defaultSubsystem.id;
+      if (item.subsystemId) {
+        const found = allSubsystems.find(s => s.id === item.subsystemId);
+        if (found) resolvedSubsystemId = found.id;
+      } else if (item.subsystemName) {
+        const nameUpper = item.subsystemName.trim().toUpperCase();
+        const found = allSubsystems.find(s => s.name.toUpperCase() === nameUpper);
+        if (found) resolvedSubsystemId = found.id;
+      }
+
+      // Nombre asignado
+      const assignedName = item.assignedName
+        ? item.assignedName.toUpperCase().trim()
+        : `DISPOSITIVO_IMP_${index + 1}`;
+
+      // Cifrar credenciales si se incluyen
+      let credentialsEncrypted: string | undefined = undefined;
+      if (item.credentials && Array.isArray(item.credentials)) {
+        const validCreds = item.credentials.filter(c => c.username || c.password || c.title);
+        if (validCreds.length > 0) {
+          credentialsEncrypted = encryptCredentials(validCreds);
+        }
+      }
+
+      return {
+        systemId,
+        clientId: system.clientId,
+        subsystemId: resolvedSubsystemId,
+        assignedName,
+        brand: item.brand || null,
+        model: item.model || null,
+        serialNumber: item.serialNumber || null,
+        ipAddress: item.ipAddress || null,
+        macAddress: item.macAddress || null,
+        credentialsEncrypted,
+        rackCabinet: item.rackCabinet || null,
+        switchName: item.switchName || null,
+        switchPort: item.switchPort || null,
+        notes: item.notes || null,
+      };
+    });
+
+    const result = await prisma.device.createMany({
+      data: devicesToCreate,
+    });
+
+    return {
+      count: result.count,
+      message: `Se han importado exitosamente ${result.count} dispositivos al sistema`,
+    };
+  }
+
+  static async update(id: string, data: Partial<CreateDeviceInput>) {
+    let credentialsEncrypted: string | undefined | null = undefined;
+
+    if (data.credentials !== undefined) {
+      if (Array.isArray(data.credentials)) {
+        const validCreds = data.credentials.filter(c => c.username || c.password || c.title);
+        credentialsEncrypted = validCreds.length > 0 ? encryptCredentials(validCreds) : null;
+      } else {
+        credentialsEncrypted = null;
+      }
+    }
+
+    const updateData: any = {
+      ...(data.systemId && { systemId: data.systemId }),
+      ...(data.clientId && { clientId: data.clientId }),
+      ...(data.subsystemId && { subsystemId: data.subsystemId }),
+      ...(data.brand !== undefined && { brand: data.brand }),
+      ...(data.model !== undefined && { model: data.model }),
+      ...(data.serialNumber !== undefined && { serialNumber: data.serialNumber }),
+      ...(data.assignedName && { assignedName: data.assignedName }),
+      ...(data.ipAddress !== undefined && { ipAddress: data.ipAddress }),
+      ...(data.macAddress !== undefined && { macAddress: data.macAddress }),
+      ...(data.rackCabinet !== undefined && { rackCabinet: data.rackCabinet }),
+      ...(data.switchName !== undefined && { switchName: data.switchName }),
+      ...(data.switchPort !== undefined && { switchPort: data.switchPort }),
+      ...(data.notes !== undefined && { notes: data.notes }),
+    };
+
+    if (credentialsEncrypted !== undefined) {
+      updateData.credentialsEncrypted = credentialsEncrypted;
+    }
+
+    const device = await prisma.device.update({
+      where: { id },
+      data: updateData,
+      include: {
+        system: true,
+        client: true,
+        subsystem: true,
+      },
+    });
+
+    return {
+      ...device,
+      hasCredentials: Boolean(device.credentialsEncrypted),
+      credentialsEncrypted: undefined,
+    };
+  }
+
+  static async delete(id: string) {
+    return prisma.device.delete({
+      where: { id },
+    });
+  }
+}
