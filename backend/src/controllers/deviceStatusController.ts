@@ -5,49 +5,51 @@ export class DeviceStatusController {
   static async getAll(req: Request, res: Response) {
     try {
       const statuses = await DeviceStatusService.getAll();
-      res.json(statuses);
+      return res.json({ success: true, data: statuses });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      return res.status(500).json({ success: false, error: error.message });
     }
   }
 
   static async getById(req: Request, res: Response) {
     try {
       const status = await DeviceStatusService.getById(req.params.id);
-      if (!status) return res.status(404).json({ error: 'Estado no encontrado' });
-      res.json(status);
+      if (!status) return res.status(404).json({ success: false, error: 'Estado no encontrado' });
+      return res.json({ success: true, data: status });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      return res.status(500).json({ success: false, error: error.message });
     }
   }
 
   static async create(req: Request, res: Response) {
     try {
       const { name, color, description } = req.body;
-      if (!name) return res.status(400).json({ error: 'El nombre del estado es obligatorio' });
+      if (!name || !name.trim()) {
+        return res.status(400).json({ success: false, error: 'El nombre del estado es obligatorio' });
+      }
 
       const created = await DeviceStatusService.create({ name, color, description });
-      res.status(201).json(created);
+      return res.status(201).json({ success: true, data: created });
     } catch (error: any) {
-      res.status(400).json({ error: error.message });
+      return res.status(400).json({ success: false, error: error.message });
     }
   }
 
   static async update(req: Request, res: Response) {
     try {
       const updated = await DeviceStatusService.update(req.params.id, req.body);
-      res.json(updated);
+      return res.json({ success: true, data: updated });
     } catch (error: any) {
-      res.status(400).json({ error: error.message });
+      return res.status(400).json({ success: false, error: error.message });
     }
   }
 
   static async delete(req: Request, res: Response) {
     try {
       await DeviceStatusService.delete(req.params.id);
-      res.json({ message: 'Estado eliminado correctamente' });
+      return res.json({ success: true, message: 'Estado eliminado correctamente' });
     } catch (error: any) {
-      res.status(400).json({ error: error.message });
+      return res.status(400).json({ success: false, error: error.message });
     }
   }
 }
