@@ -63,6 +63,24 @@ export const DeviceTable: React.FC<DeviceTableProps> = ({
           />
         </div>
 
+        {/* Filter by Device Subsystem */}
+        <select
+          className="form-select"
+          style={{ width: '210px', height: '36px', fontSize: '0.8rem', padding: '0 2.2rem 0 0.75rem' }}
+          value={selectedSubsystemId}
+          onChange={(e) => setSelectedSubsystemId(e.target.value)}
+        >
+          <option value="">Todos los subsistemas ({devices.length})</option>
+          {subsystems.map((sub) => {
+            const count = devices.filter((d) => d.subsystemId === sub.id).length;
+            return (
+              <option key={sub.id} value={sub.id}>
+                {sub.name} ({count})
+              </option>
+            );
+          })}
+        </select>
+
         {/* Filter by Device Status */}
         {deviceStatuses.length > 0 && (
           <select
@@ -79,38 +97,6 @@ export const DeviceTable: React.FC<DeviceTableProps> = ({
             ))}
           </select>
         )}
-
-        {/* Subsystem Filter Pills */}
-        <div style={{ display: 'flex', gap: '0.35rem', overflowX: 'auto', alignItems: 'center', paddingBottom: '0.2rem' }}>
-          <button
-            className={`btn ${selectedSubsystemId === '' ? 'btn-primary' : 'btn-secondary'}`}
-            style={{ padding: '0 0.75rem', fontSize: '0.8rem', height: '36px' }}
-            onClick={() => setSelectedSubsystemId('')}
-          >
-            Todos ({devices.length})
-          </button>
-          {subsystems.map((sub) => {
-            const count = devices.filter((d) => d.subsystemId === sub.id).length;
-            const isSelected = selectedSubsystemId === sub.id;
-            return (
-              <button
-                key={sub.id}
-                className={`btn ${isSelected ? 'btn-primary' : 'btn-secondary'}`}
-                style={{
-                  padding: '0 0.75rem',
-                  fontSize: '0.8rem',
-                  height: '36px',
-                  borderColor: sub.color,
-                  color: isSelected ? '#fff' : sub.color,
-                  background: isSelected ? sub.color : `${sub.color}15`,
-                }}
-                onClick={() => setSelectedSubsystemId(sub.id)}
-              >
-                {getSubsystemIcon(sub.icon)} {sub.name} ({count})
-              </button>
-            );
-          })}
-        </div>
       </div>
 
       {/* Main Devices Table */}
