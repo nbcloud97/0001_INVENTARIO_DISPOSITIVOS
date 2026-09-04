@@ -130,6 +130,7 @@ export const DeviceTable: React.FC<DeviceTableProps> = ({
               <thead>
                 <tr>
                   <th>Nombre Asignado</th>
+                  <th>Estado</th>
                   <th>Subsistema</th>
                   <th>Marca / Modelo</th>
                   <th>Nº Serie</th>
@@ -170,31 +171,45 @@ export const DeviceTable: React.FC<DeviceTableProps> = ({
                         >
                           {device.assignedName}
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', marginTop: '0.15rem' }}>
-                          {device.deviceTypeName && (
-                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 500 }}>
-                              🏷️ {device.deviceTypeName}
-                            </span>
-                          )}
-                          {device.statusName && (
-                            <span
-                              style={{
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                padding: '0.1rem 0.45rem',
-                                borderRadius: '9999px',
-                                fontSize: '0.7rem',
-                                fontWeight: 700,
-                                background: `${device.statusColor || '#10b981'}20`,
-                                color: device.statusColor || '#10b981',
-                                border: `1px solid ${device.statusColor || '#10b981'}55`,
-                              }}
-                            >
-                              {device.statusName}
-                            </span>
-                          )}
-                        </div>
+                        {device.deviceTypeName && (
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 500, marginTop: '0.15rem' }}>
+                            🏷️ {device.deviceTypeName}
+                          </div>
+                        )}
                       </button>
+                    </td>
+
+                    {/* Estado */}
+                    <td>
+                      {device.statusName ? (
+                        <span
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.35rem',
+                            padding: '0.2rem 0.6rem',
+                            borderRadius: '9999px',
+                            fontSize: '0.75rem',
+                            fontWeight: 600,
+                            background: `${device.statusColor || '#10b981'}20`,
+                            color: device.statusColor || '#10b981',
+                            border: `1px solid ${device.statusColor || '#10b981'}55`,
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          <span
+                            style={{
+                              width: '6px',
+                              height: '6px',
+                              borderRadius: '50%',
+                              backgroundColor: device.statusColor || '#10b981',
+                            }}
+                          />
+                          {device.statusName}
+                        </span>
+                      ) : (
+                        <span style={{ color: 'var(--text-muted)' }}>-</span>
+                      )}
                     </td>
 
                     {/* Subsistema */}
