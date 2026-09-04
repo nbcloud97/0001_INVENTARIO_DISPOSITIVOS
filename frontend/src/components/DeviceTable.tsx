@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Search, Edit2, Trash2, Shield, Camera, Network, PhoneCall, KeyRound, HardDrive, Info } from 'lucide-react';
-import { Device, Subsystem } from '../types';
+import { Device, Subsystem, DeviceStatus } from '../types';
 
 interface DeviceTableProps {
   devices: Device[];
   subsystems: Subsystem[];
+  deviceStatuses?: DeviceStatus[];
   selectedSubsystemId: string;
   setSelectedSubsystemId: (id: string) => void;
   searchTerm: string;
@@ -17,6 +18,7 @@ interface DeviceTableProps {
 export const DeviceTable: React.FC<DeviceTableProps> = ({
   devices,
   subsystems,
+  deviceStatuses = [],
   selectedSubsystemId,
   setSelectedSubsystemId,
   searchTerm,
@@ -25,6 +27,15 @@ export const DeviceTable: React.FC<DeviceTableProps> = ({
   onDeleteDevice,
   onSelectDeviceDetails,
 }) => {
+  const [selectedStatusId, setSelectedStatusId] = useState<string>('');
+
+  const filteredDevices = devices.filter((d) => {
+    if (selectedStatusId && d.statusId !== selectedStatusId) {
+      return false;
+    }
+    return true;
+  });
+
   const getSubsystemIcon = (iconName?: string) => {
     switch (iconName) {
       case 'camera': return <Camera size={14} />;
@@ -37,7 +48,7 @@ export const DeviceTable: React.FC<DeviceTableProps> = ({
 
   return (
     <div>
-      {/* Search Toolbar & Subsystem Filters */}
+      {/* Search Toolbar, Status Filter & Subsystem Filters */}
       <div className="toolbar">
         {/* Search Box */}
         <div className="search-box">
@@ -50,6 +61,23 @@ export const DeviceTable: React.FC<DeviceTableProps> = ({
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
+
+        {/* Filter by Device Status */}
+        {deviceStatuses.length > 0 && (
+          <select
+            className="input-select"
+            style={{ width: '170px', fontSize: '0.8rem', padding: '0.35rem 0.65rem' }}
+            value={selectedStatusId}
+            onChange={(e) => setSelectedStatusId(e.target.value)}
+          >
+            <option value="">Todos los estados</option>
+            {deviceStatuses.map((st) => (
+              <option key={st.id} value={st.id}>
+                {st.name}
+              </option>
+            ))}
+          </select>
+        )}
 
         {/* Subsystem Filter Pills */}
         <div style={{ display: 'flex', gap: '0.35rem', overflowX: 'auto', paddingBottom: '0.2rem' }}>
@@ -85,12 +113,12 @@ export const DeviceTable: React.FC<DeviceTableProps> = ({
 
       {/* Main Devices Table */}
       <div className="table-card">
-        {devices.length === 0 ? (
+        {filteredDevices.length === 0 ? (
           <div className="empty-state">
             <HardDrive className="empty-icon" />
             <h3>No se encontraron dispositivos</h3>
             <p style={{ marginTop: '0.5rem', fontSize: '0.9rem' }}>
-              Prueba a cambiar el filtro de subsistema o añade nuevos dispositivos a este sistema.
+              Prueba a cambiar el filtro de subsistema o estado, o añade nuevos dispositivos a este sistema.
             </p>
           </div>
         ) : (
@@ -110,7 +138,7 @@ export const DeviceTable: React.FC<DeviceTableProps> = ({
                 </tr>
               </thead>
               <tbody>
-                {devices.map((device) => (
+                {filteredDevices.map((device) => (
                   <tr key={device.id}>
                     {/* Nombre Asignado - CLICABLE */}
                     <td>

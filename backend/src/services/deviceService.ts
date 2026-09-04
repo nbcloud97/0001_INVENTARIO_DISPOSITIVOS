@@ -52,6 +52,7 @@ export interface ImportDeviceItemInput {
   subsystemId?: string;
   deviceTypeName?: string;
   deviceTypeId?: string;
+  statusName?: string;
   assignedName?: string;
   brand?: string;
   model?: string;
@@ -360,10 +361,9 @@ export class DeviceService {
     if (!defaultSubsystem) throw new Error('No hay subsistemas registrados en la aplicación');
 
     let allDeviceTypes = await prisma.deviceType.findMany();
+    let allStatuses = await prisma.deviceStatus.findMany();
 
-    const defaultStatus = await prisma.deviceStatus.findFirst({
-      where: { name: { equals: 'Operativo' } },
-    });
+    const defaultStatus = allStatuses.find(st => st.name.trim().toLowerCase() === 'operativo') || allStatuses[0];
     const defaultStatusId = defaultStatus?.id || null;
 
     const devicesToCreate = [];
@@ -427,6 +427,15 @@ export class DeviceService {
         );
       }
 
+      // 5. Resolver estado si viene indicado en la fila
+      let resolvedStatusId = defaultStatusId;
+      if (item.statusName) {
+        const statusUpper = item.statusName.trim().toUpperCase();
+        const foundStatus = allStatuses.find(st => st.name.trim().toUpperCase() === statusUpper);
+        if (foundStatus) {
+          resolvedStatusId = foundStatus.id;
+        }
+      }
 
       // Cifrar credenciales si se incluyen
       let credentialsEncrypted: string | undefined = undefined;
@@ -442,7 +451,7 @@ export class DeviceService {
         clientId: system.clientId,
         subsystemId: resolvedSubsystemId,
         deviceTypeId: resolvedDeviceTypeId,
-        statusId: defaultStatusId,
+        statusId: resolvedStatusId,
         assignedName,
         brand: item.brand || null,
         model: item.model || null,
@@ -535,8 +544,9 @@ export class DeviceService {
   }
 
   static async delete(id: string) {
-    return prisma.device.delete({
+    return await prisma.device.delete({
       where: { id },
     });
   }
 }
+      

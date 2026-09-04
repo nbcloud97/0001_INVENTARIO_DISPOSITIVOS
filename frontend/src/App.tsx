@@ -215,6 +215,20 @@ export const App: React.FC = () => {
 
   const requestDeleteSubsystem = (id: string) => {
     const target = subsystems.find(s => s.id === id);
+    const countDevices = devices.filter(d => d.subsystemId === id).length;
+    const countTypes = deviceTypes.filter(dt => dt.subsystemId === id).length;
+
+    if (countDevices > 0 || countTypes > 0) {
+      const details = [];
+      if (countDevices > 0) details.push(`${countDevices} dispositivo(s)`);
+      if (countTypes > 0) details.push(`${countTypes} tipo(s) de dispositivo`);
+
+      alert(
+        `⚠️ ADVERTENCIA: No se puede eliminar el subsistema "${target?.name || ''}" porque está en uso por ${details.join(' y ')}.\n\nPara poder eliminarlo, primero debes reasignar o eliminar los elementos vinculados.`
+      );
+      return;
+    }
+
     setConfirmModal({
       isOpen: true,
       type: 'subsystem',
@@ -573,6 +587,7 @@ export const App: React.FC = () => {
                   <DeviceTable
                     devices={devices}
                     subsystems={subsystems}
+                    deviceStatuses={deviceStatuses}
                     selectedSubsystemId={selectedSubsystemFilterId}
                     setSelectedSubsystemId={setSelectedSubsystemFilterId}
                     searchTerm={searchTerm}
@@ -702,6 +717,7 @@ export const App: React.FC = () => {
             subsystems={subsystems}
             devices={devices}
             deviceTypes={deviceTypes}
+            deviceStatuses={deviceStatuses}
             onNavigateToClient={(clientId) => {
               setSelectedClientId(clientId);
               setSelectedSystemId('');

@@ -29,6 +29,7 @@ export async function exportSystemDevicesToExcel(
         'SISTEMA': device.system?.name || systemName || '',
         'SUBSISTEMA': device.subsystem?.name || '',
         'NOMBRE ASIGNADO': device.assignedName || '',
+        'ESTADO': device.statusName || 'Operativo',
         'MARCA': device.brand || '',
         'MODELO': device.model || '',
         'NÚMERO DE SERIE': device.serialNumber || '',
@@ -52,6 +53,7 @@ export async function exportSystemDevicesToExcel(
     { wch: 25 }, // SISTEMA
     { wch: 15 }, // SUBSISTEMA
     { wch: 28 }, // NOMBRE ASIGNADO
+    { wch: 16 }, // ESTADO
     { wch: 16 }, // MARCA
     { wch: 18 }, // MODELO
     { wch: 20 }, // NÚMERO DE SERIE
@@ -86,6 +88,7 @@ export function downloadImportTemplate() {
       'NOMBRE ASIGNADO': 'CAM_ACCESO_PRINCIPAL_01',
       'SUBSISTEMA': 'CCTV',
       'TIPO DE DISPOSITIVO': 'Cámara IP Domo',
+      'ESTADO': 'Operativo',
       'MARCA': 'HIKVISION',
       'MODELO': 'DS-2CD2143G0-I',
       'NÚMERO DE SERIE': 'HKV-2026-987651',
@@ -103,6 +106,7 @@ export function downloadImportTemplate() {
       'NOMBRE ASIGNADO': 'CENTRAL_INTRUSION_01',
       'SUBSISTEMA': 'INTRUSIÓN',
       'TIPO DE DISPOSITIVO': 'Central de Alarma',
+      'ESTADO': 'Operativo',
       'MARCA': 'HONEYWELL',
       'MODELO': 'GALAXY FLEX 50',
       'NÚMERO DE SERIE': 'HON-INT-2026-02',

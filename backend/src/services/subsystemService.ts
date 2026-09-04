@@ -39,6 +39,16 @@ export class SubsystemService {
   }
 
   static async delete(id: string) {
+    const devicesCount = await prisma.device.count({ where: { subsystemId: id } });
+    if (devicesCount > 0) {
+      throw new Error(`No se puede eliminar el subsistema porque está asignado a ${devicesCount} dispositivo(s)`);
+    }
+
+    const typesCount = await prisma.deviceType.count({ where: { subsystemId: id } });
+    if (typesCount > 0) {
+      throw new Error(`No se puede eliminar el subsistema porque tiene ${typesCount} tipo(s) de dispositivo asociado(s)`);
+    }
+
     return prisma.subsystem.delete({
       where: { id }
     });

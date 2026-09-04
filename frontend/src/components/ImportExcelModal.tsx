@@ -76,6 +76,7 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
             assignedName: getItemValue(['NOMBRE ASIGNADO', 'NOMBRE', 'DISPOSITIVO', 'EQUIPO']),
             subsystemName: getItemValue(['SUBSISTEMA', 'SUB-SISTEMA']),
             deviceTypeName: getItemValue(['TIPO DE DISPOSITIVO', 'TIPO DISPOSITIVO', 'TIPO DE EQUIPO', 'TIPO EQUIPO', 'TIPO']),
+            statusName: getItemValue(['ESTADO', 'ESTADO DISPOSITIVO', 'STATUS']),
             brand: getItemValue(['MARCA']),
             model: getItemValue(['MODELO']),
             serialNumber: getItemValue(['NÚMERO DE SERIE', 'NUMERO DE SERIE', 'Nº SERIE', 'SERIE']),

@@ -13,7 +13,7 @@ import {
   PhoneCall,
   KeyRound,
 } from 'lucide-react';
-import { Client, System, Subsystem, Device, DeviceType } from '../types';
+import { Client, System, Subsystem, Device, DeviceType, DeviceStatus } from '../types';
 
 interface ReportsViewProps {
   clients: Client[];
@@ -21,6 +21,7 @@ interface ReportsViewProps {
   subsystems: Subsystem[];
   devices: Device[];
   deviceTypes: DeviceType[];
+  deviceStatuses?: DeviceStatus[];
   onNavigateToClient?: (clientId: string) => void;
 }
 
@@ -30,6 +31,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
   subsystems,
   devices,
   deviceTypes,
+  deviceStatuses = [],
 }) => {
   // 1. KPI Metrics
   const totalClients = clients.length;
@@ -49,7 +51,18 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
     };
   }).sort((a, b) => b.deviceCount - a.deviceCount);
 
-  // 3. Devices by Brand
+  // 3. Devices by Status
+  const statusStats = deviceStatuses.map(st => {
+    const count = devices.filter(d => d.statusId === st.id).length;
+    const percentage = totalDevices > 0 ? Math.round((count / totalDevices) * 100) : 0;
+    return {
+      ...st,
+      deviceCount: count,
+      percentage,
+    };
+  }).sort((a, b) => b.deviceCount - a.deviceCount);
+
+  // 4. Devices by Brand
   const brandCounts: Record<string, number> = {};
   devices.forEach(d => {
     const brandName = d.brand?.trim() || 'GENÉRICO / SIN MARCA';
@@ -102,17 +115,15 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
             <BarChart3 size={24} />
           </div>
           <div>
-            <h2 style={{ fontSize: '1.2rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
-              Informes y Estad&iacute;sticas de Inventario
-            </h2>
-            <p style={{ fontSize: '0.825rem', color: 'var(--text-secondary)', margin: '0.2rem 0 0 0' }}>
-              Resumen ejecutivo del parque de dispositivos y desglose por subsistemas y marcas.
+            <h2 style={{ fontSize: '1.25rem', margin: 0, color: 'var(--text-primary)' }}>Informes y Resumen de Inventario</h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.2rem' }}>
+              Estad&iacute;sticas consolidadas del parque de dispositivos y clientes registrados.
             </p>
           </div>
         </div>
       </div>
 
-      {/* KPI Cards Grid */}
+      {/* Grid Superior: KPI Cards */}
       <div
         style={{
           display: 'grid',
@@ -148,7 +159,7 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
           </div>
           <div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>
-              Clientes
+              Clientes Activos
             </div>
             <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: '0.1rem' }}>
               {totalClients}
@@ -301,8 +312,8 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
         </div>
       </div>
 
-      {/* Grid Central: Desglose por Subsistema & Desglose por Marcas */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1.25rem' }}>
+      {/* Grid Central: Subsistemas, Estados & Marcas */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.25rem' }}>
         {/* Desglose por Subsistema */}
         <div
           style={{
@@ -355,6 +366,74 @@ export const ReportsView: React.FC<ReportsViewProps> = ({
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* Desglose por Estado de Dispositivo */}
+        <div
+          style={{
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-color)',
+            borderRadius: '10px',
+            padding: '1.25rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1rem',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-emerald)' }}>
+            <Tag size={18} />
+            <h3 style={{ fontSize: '0.95rem', fontWeight: 700, margin: 0 }}>
+              Distribuci&oacute;n por Estado
+            </h3>
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+            {statusStats.length === 0 ? (
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', textAlign: 'center', padding: '1rem' }}>
+                No hay estados registrados.
+              </div>
+            ) : (
+              statusStats.map(st => (
+                <div key={st.id} style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', fontWeight: 600 }}>
+                      <span
+                        style={{
+                          width: '10px',
+                          height: '10px',
+                          borderRadius: '50%',
+                          background: st.color || '#10b981',
+                        }}
+                      />
+                      <span>{st.name}</span>
+                    </div>
+                    <div style={{ fontWeight: 700, fontSize: '0.825rem' }}>
+                      {st.deviceCount} <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>({st.percentage}%)</span>
+                    </div>
+                  </div>
+                  <div
+                    style={{
+                      width: '100%',
+                      height: '8px',
+                      borderRadius: '4px',
+                      background: 'var(--bg-primary)',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <div
+                      style={{
+                        height: '100%',
+                        width: `${st.percentage}%`,
+                        background: st.color || '#10b981',
+                        borderRadius: '4px',
+                        transition: 'width 0.4s ease',
+                      }}
+                    />
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
 
