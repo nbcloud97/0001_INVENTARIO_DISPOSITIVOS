@@ -58,7 +58,7 @@ export const DeviceTypeTable: React.FC<DeviceTypeTableProps> = ({
             <input
               type="text"
               className="input-search"
-              placeholder="Buscar tipo de dispositivo..."
+              placeholder="Buscar..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />

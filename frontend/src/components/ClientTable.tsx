@@ -40,7 +40,7 @@ export const ClientTable: React.FC<ClientTableProps> = ({
           <input
             type="text"
             className="input-search"
-            placeholder="Buscar cliente por Nombre Comercial, Nombre Fiscal, NIF o ID Manual..."
+            placeholder="Buscar..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />

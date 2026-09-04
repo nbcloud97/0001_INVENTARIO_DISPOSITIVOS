@@ -71,7 +71,7 @@ export const SystemNotesView: React.FC<SystemNotesViewProps> = ({ systemId }) =>
           <input
             type="text"
             className="input-search"
-            placeholder="Buscar en las notas del sistema..."
+            placeholder="Buscar..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />

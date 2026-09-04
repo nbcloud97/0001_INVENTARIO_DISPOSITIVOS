@@ -45,7 +45,7 @@ export const SubsystemTable: React.FC<SubsystemTableProps> = ({
           <input
             type="text"
             className="input-search"
-            placeholder="Buscar subsistema por Nombre o Descripción..."
+            placeholder="Buscar..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />

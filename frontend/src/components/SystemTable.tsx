@@ -41,7 +41,7 @@ export const SystemTable: React.FC<SystemTableProps> = ({
           <input
             type="text"
             className="input-search"
-            placeholder="Buscar sistema por Nombre, Código, Cliente o Notas..."
+            placeholder="Buscar..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />

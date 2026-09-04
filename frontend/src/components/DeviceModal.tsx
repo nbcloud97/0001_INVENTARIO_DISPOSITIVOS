@@ -404,7 +404,6 @@ export const DeviceModal: React.FC<DeviceModalProps> = ({
                             type="text"
                             className="form-input"
                             style={{ fontWeight: 600, fontSize: '0.775rem', padding: '0.2rem 0.5rem', width: '220px' }}
-                            placeholder="Etiqueta"
                             value={cred.title || ''}
                             onChange={(e) => handleCredentialChange(idx, 'title', e.target.value)}
                           />

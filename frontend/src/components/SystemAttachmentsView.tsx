@@ -139,7 +139,7 @@ export const SystemAttachmentsView: React.FC<SystemAttachmentsViewProps> = ({ sy
           <input
             type="text"
             className="input-search"
-            placeholder="Buscar en los archivos adjuntos..."
+            placeholder="Buscar..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />

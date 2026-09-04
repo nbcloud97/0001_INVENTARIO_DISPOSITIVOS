@@ -45,7 +45,7 @@ export const DeviceTable: React.FC<DeviceTableProps> = ({
           <input
             type="text"
             className="input-search"
-            placeholder="Buscar por Nombre, Marca, Modelo, IP, MAC, Rack o Switch..."
+            placeholder="Buscar..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
