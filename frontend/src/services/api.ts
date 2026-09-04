@@ -1,4 +1,4 @@
-import { Client, Subsystem, System, Device, CreateDeviceFormData, BulkDeviceFormData, DeviceCredentialItem, SystemNote } from '../types';
+import { Client, Subsystem, System, Device, CreateDeviceFormData, BulkDeviceFormData, DeviceCredentialItem, SystemNote, SystemAttachment } from '../types';
 
 const API_BASE = '/api/v1';
 
@@ -85,6 +85,38 @@ export const api = {
   updateSystemNote: (id: string, data: { title?: string; content?: string }) =>
     fetchJson<SystemNote>(`/systems/notes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteSystemNote: (id: string) => fetchJson<{ message: string }>(`/systems/notes/${id}`, { method: 'DELETE' }),
+
+  // Archivos Adjuntos de Sistema
+  getSystemAttachments: (systemId: string) => fetchJson<SystemAttachment[]>(`/systems/${systemId}/attachments`),
+
+  uploadSystemAttachment: async (systemId: string, file: File): Promise<SystemAttachment> => {
+    const token = localStorage.getItem('auth_token');
+    const formData = new FormData();
+    formData.append('systemId', systemId);
+    formData.append('file', file);
+
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${API_BASE}/systems/attachments`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+      throw new Error(data.error || 'Error al subir el archivo adjunto');
+    }
+
+    return data.data;
+  },
+
+  getAttachmentDownloadUrl: (attachmentId: string) => `${API_BASE}/systems/attachments/${attachmentId}/download`,
+
+  deleteSystemAttachment: (id: string) => fetchJson<{ message: string }>(`/systems/attachments/${id}`, { method: 'DELETE' }),
 
   // Dispositivos
   getDevices: (params?: { systemId?: string; clientId?: string; subsystemId?: string; search?: string; rackCabinet?: string }) => {

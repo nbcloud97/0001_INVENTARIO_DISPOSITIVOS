@@ -36,6 +36,18 @@ export interface SystemNote {
   updatedAt?: string;
 }
 
+export interface SystemAttachment {
+  id: string;
+  systemId: string;
+  filename: string;
+  storedName: string;
+  filePath: string;
+  mimeType: string;
+  fileSize: number;
+  createdBy?: string;
+  createdAt: string;
+}
+
 export interface System {
   id: string;
   name: string;
@@ -52,9 +64,11 @@ export interface System {
   _count?: {
     devices: number;
     systemNotes?: number;
+    attachments?: number;
   };
   devices?: Device[];
   systemNotes?: SystemNote[];
+  attachments?: SystemAttachment[];
   createdAt?: string;
 }
 

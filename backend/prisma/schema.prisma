@@ -1,4 +1,4 @@
-// Schema Prisma - Modelo System, SystemNote & User con autenticación
+// Schema Prisma - Modelo System, SystemNote, SystemAttachment & User
 generator client {
   provider = "prisma-client-js"
 }
@@ -60,6 +60,7 @@ model System {
 
   devices     Device[]
   systemNotes SystemNote[]
+  attachments SystemAttachment[]
 
   @@index([clientId])
   @@index([subsystemId])
@@ -74,6 +75,22 @@ model SystemNote {
   createdBy String?  // Usuario que la registró
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([systemId])
+}
+
+model SystemAttachment {
+  id          String   @id @default(uuid())
+  systemId    String
+  system      System   @relation(fields: [systemId], references: [id], onDelete: Cascade)
+  filename    String   // Nombre de archivo original
+  storedName  String   // Nombre almacenado en disco
+  filePath    String   // Ruta relativa de almacenamiento
+  mimeType    String   // Tipo MIME (application/pdf, image/png, etc)
+  fileSize    Int      // Tamaño en bytes
+  createdBy   String?  // Usuario que lo subió
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@index([systemId])
 }

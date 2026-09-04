@@ -14,11 +14,12 @@ import { DeviceDetailsModal } from './components/DeviceDetailsModal';
 import { ConfirmModal } from './components/ConfirmModal';
 import { LoginView } from './components/LoginView';
 import { SystemNotesView } from './components/SystemNotesView';
+import { SystemAttachmentsView } from './components/SystemAttachmentsView';
 
 import { Client, Subsystem, System, Device } from './types';
 import { api, UserProfile } from './services/api';
 import { exportSystemDevicesToExcel } from './utils/excelExport';
-import { ArrowLeft, Building2, Cpu, Layers3, FileSpreadsheet, ChevronDown, Upload, HardDrive, FileText } from 'lucide-react';
+import { ArrowLeft, Building2, Cpu, Layers3, FileSpreadsheet, ChevronDown, Upload, HardDrive, FileText, Paperclip } from 'lucide-react';
 
 export const App: React.FC = () => {
   // Autenticación State
@@ -50,8 +51,8 @@ export const App: React.FC = () => {
   // Navigation: Main tabs ('clients' or 'config')
   const [activeTab, setActiveTab] = useState<'clients' | 'config'>('clients');
 
-  // Sub-tabs dentro de un Sistema ('devices' | 'notes')
-  const [systemTab, setSystemTab] = useState<'devices' | 'notes'>('devices');
+  // Sub-tabs dentro de un Sistema ('devices' | 'notes' | 'attachments')
+  const [systemTab, setSystemTab] = useState<'devices' | 'notes' | 'attachments'>('devices');
 
   // Theme state ('light' | 'dark')
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -485,6 +486,13 @@ export const App: React.FC = () => {
                   >
                     <FileText size={15} /> Notas
                   </button>
+                  <button
+                    className={`btn ${systemTab === 'attachments' ? 'btn-primary' : 'btn-secondary'}`}
+                    style={{ fontSize: '0.85rem', padding: '0.4rem 0.9rem' }}
+                    onClick={() => setSystemTab('attachments')}
+                  >
+                    <Paperclip size={15} /> Adjuntos
+                  </button>
                 </div>
 
                 {/* Contenido según la Solapa Seleccionada */}
@@ -500,8 +508,13 @@ export const App: React.FC = () => {
                     onDeleteDevice={requestDeleteDevice}
                     onSelectDeviceDetails={(dev) => setSelectedDetailsDevice(dev)}
                   />
-                ) : (
+                ) : systemTab === 'notes' ? (
                   <SystemNotesView
+                    systemId={selectedSystemId}
+                    systemName={activeSystem.name}
+                  />
+                ) : (
+                  <SystemAttachmentsView
                     systemId={selectedSystemId}
                     systemName={activeSystem.name}
                   />

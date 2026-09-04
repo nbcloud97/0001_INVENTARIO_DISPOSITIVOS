@@ -5,6 +5,7 @@ import { SystemController } from '../controllers/systemController';
 import { DeviceController } from '../controllers/deviceController';
 import { AuthController } from '../controllers/authController';
 import { SystemNoteController } from '../controllers/systemNoteController';
+import { SystemAttachmentController, uploadMiddleware } from '../controllers/systemAttachmentController';
 
 export const apiRouter = Router();
 
@@ -26,7 +27,7 @@ apiRouter.post('/subsystems', SubsystemController.create);
 apiRouter.put('/subsystems/:id', SubsystemController.update);
 apiRouter.delete('/subsystems/:id', SubsystemController.delete);
 
-// Rutas de Sistemas (Jerarquía Cliente -> Sistema -> Dispositivos & Notas)
+// Rutas de Sistemas (Jerarquía Cliente -> Sistema -> Dispositivos, Notas & Adjuntos)
 apiRouter.get('/systems', SystemController.getAll);
 apiRouter.get('/systems/:id', SystemController.getById);
 apiRouter.post('/systems', SystemController.create);
@@ -38,6 +39,12 @@ apiRouter.get('/systems/:systemId/notes', SystemNoteController.getBySystemId);
 apiRouter.post('/systems/notes', SystemNoteController.create);
 apiRouter.put('/systems/notes/:id', SystemNoteController.update);
 apiRouter.delete('/systems/notes/:id', SystemNoteController.delete);
+
+// Rutas de Archivos Adjuntos de Sistema
+apiRouter.get('/systems/:systemId/attachments', SystemAttachmentController.getBySystemId);
+apiRouter.post('/systems/attachments', uploadMiddleware, SystemAttachmentController.upload);
+apiRouter.get('/systems/attachments/:id/download', SystemAttachmentController.download);
+apiRouter.delete('/systems/attachments/:id', SystemAttachmentController.delete);
 
 // Rutas de Dispositivos
 apiRouter.get('/devices', DeviceController.getAll);
