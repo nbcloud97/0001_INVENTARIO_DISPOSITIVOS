@@ -1,10 +1,10 @@
 import React from 'react';
-import { Server, Users, Settings, Sun, Moon, LogOut, User } from 'lucide-react';
+import { Server, Users, Settings, Sun, Moon, LogOut, User, BarChart3 } from 'lucide-react';
 import { UserProfile } from '../services/api';
 
 interface HeaderProps {
-  activeTab: 'clients' | 'config';
-  setActiveTab: (tab: 'clients' | 'config') => void;
+  activeTab: 'clients' | 'reports' | 'config';
+  setActiveTab: (tab: 'clients' | 'reports' | 'config') => void;
   theme: 'light' | 'dark';
   onToggleTheme: () => void;
   user: UserProfile | null;
@@ -44,6 +44,12 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={() => setActiveTab('clients')}
             >
               <Users size={15} /> Clientes
+            </button>
+            <button
+              className={`nav-btn ${activeTab === 'reports' ? 'active' : ''}`}
+              onClick={() => setActiveTab('reports')}
+            >
+              <BarChart3 size={15} /> Informes
             </button>
             <button
               className={`nav-btn ${activeTab === 'config' ? 'active' : ''}`}

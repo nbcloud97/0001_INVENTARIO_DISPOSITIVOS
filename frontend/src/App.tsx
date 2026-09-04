@@ -17,6 +17,7 @@ import { ConfirmModal } from './components/ConfirmModal';
 import { LoginView } from './components/LoginView';
 import { SystemNotesView } from './components/SystemNotesView';
 import { SystemAttachmentsView } from './components/SystemAttachmentsView';
+import { ReportsView } from './components/ReportsView';
 
 import { Client, Subsystem, System, Device, DeviceType } from './types';
 import { api, UserProfile } from './services/api';
@@ -50,8 +51,8 @@ export const App: React.FC = () => {
     }
   }, []);
 
-  // Navigation: Main tabs ('clients' or 'config')
-  const [activeTab, setActiveTab] = useState<'clients' | 'config'>('clients');
+  // Navigation: Main tabs ('clients' | 'reports' | 'config')
+  const [activeTab, setActiveTab] = useState<'clients' | 'reports' | 'config'>('clients');
 
   // Sub-pestañas en Configuración ('subsystems' | 'deviceTypes')
   const [configTab, setConfigTab] = useState<'subsystems' | 'deviceTypes'>('subsystems');
@@ -643,9 +644,26 @@ export const App: React.FC = () => {
             )}
           </div>
         )}
+        {/* ========================================================================= */}
+        {/* PESTAÑA 2: INFORMES (Estadísticas y Resumen de Inventario)               */}
+        {/* ========================================================================= */}
+        {activeTab === 'reports' && (
+          <ReportsView
+            clients={clients}
+            systems={systems}
+            subsystems={subsystems}
+            devices={devices}
+            deviceTypes={deviceTypes}
+            onNavigateToClient={(clientId) => {
+              setSelectedClientId(clientId);
+              setSelectedSystemId('');
+              setActiveTab('clients');
+            }}
+          />
+        )}
 
         {/* ========================================================================= */}
-        {/* PESTAÑA 2: CONFIGURACIÓN (Subsistemas & Dispositivos)                    */}
+        {/* PESTAÑA 3: CONFIGURACIÓN (Subsistemas & Dispositivos)                    */}
         {/* ========================================================================= */}
         {activeTab === 'config' && (
           <div>
