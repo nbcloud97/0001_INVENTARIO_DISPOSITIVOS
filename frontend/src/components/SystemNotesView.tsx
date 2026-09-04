@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus, FileText, Edit2, Trash2, Calendar, Clock } from 'lucide-react';
+import { Search, Plus, FileText, Edit2, Trash2, Calendar } from 'lucide-react';
 import { SystemNote } from '../types';
 import { api } from '../services/api';
 import { SystemNoteModal } from './SystemNoteModal';
@@ -88,13 +88,13 @@ export const SystemNotesView: React.FC<SystemNotesViewProps> = ({ systemId }) =>
         </button>
       </div>
 
-      {/* Grid de Tarjetas de Notas */}
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
-          Cargando notas del sistema...
-        </div>
-      ) : filteredNotes.length === 0 ? (
-        <div className="table-card">
+      {/* Tabla de Notas */}
+      <div className="table-card">
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+            Cargando notas del sistema...
+          </div>
+        ) : filteredNotes.length === 0 ? (
           <div className="empty-state">
             <FileText className="empty-icon" />
             <h3>No hay notas registradas</h3>
@@ -102,96 +102,74 @@ export const SystemNotesView: React.FC<SystemNotesViewProps> = ({ systemId }) =>
               Registra anotaciones técnicas, intervenciones o detalles sobre este sistema.
             </p>
           </div>
-        </div>
-      ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '1.1rem' }}>
-          {filteredNotes.map((note) => (
-            <div
-              key={note.id}
-              style={{
-                background: 'var(--bg-card)',
-                border: '1px solid var(--border-color)',
-                borderRadius: '8px',
-                padding: '1.1rem',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                boxShadow: 'var(--shadow-sm)',
-                transition: 'all 0.15s ease',
-              }}
-            >
-              <div>
-                {/* Header de la tarjeta */}
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <FileText size={18} color="var(--accent-blue)" />
-                    <h3 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
-                      {note.title || 'NOTA GENERAL'}
-                    </h3>
-                  </div>
-                  <div style={{ display: 'flex', gap: '0.35rem' }}>
-                    <button
-                      className="btn btn-secondary btn-icon"
-                      style={{ padding: '0.2rem 0.4rem' }}
-                      title="Editar Nota"
-                      onClick={() => {
-                        setNoteToEdit(note);
-                        setIsModalOpen(true);
-                      }}
-                    >
-                      <Edit2 size={14} />
-                    </button>
-                    <button
-                      className="btn btn-danger btn-icon"
-                      style={{ padding: '0.2rem 0.4rem' }}
-                      title="Eliminar Nota"
-                      onClick={() => handleDelete(note.id)}
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </div>
+        ) : (
+          <div className="table-wrapper">
+            <table className="device-table">
+              <thead>
+                <tr>
+                  <th style={{ width: '220px' }}>Título</th>
+                  <th>Contenido / Observaciones</th>
+                  <th style={{ width: '180px' }}>Fecha de Carga</th>
+                  <th style={{ textAlign: 'right', width: '100px' }}>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredNotes.map((note) => (
+                  <tr key={note.id}>
+                    {/* Título de la nota */}
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
+                        <FileText size={18} color="var(--accent-blue)" />
+                        <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.9rem' }}>
+                          {note.title || 'NOTA GENERAL'}
+                        </span>
+                      </div>
+                    </td>
 
-                {/* Contenido de la nota */}
-                <div
-                  style={{
-                    fontSize: '0.875rem',
-                    color: 'var(--text-primary)',
-                    whiteSpace: 'pre-wrap',
-                    lineHeight: 1.5,
-                    background: 'var(--bg-primary)',
-                    padding: '0.85rem 1rem',
-                    borderRadius: '6px',
-                    border: '1px solid var(--border-color)',
-                    minHeight: '80px',
-                  }}
-                >
-                  {note.content}
-                </div>
-              </div>
+                    {/* Contenido / Observaciones */}
+                    <td>
+                      <div style={{ fontSize: '0.875rem', color: 'var(--text-primary)', whiteSpace: 'pre-wrap', lineHeight: '1.45' }}>
+                        {note.content}
+                      </div>
+                    </td>
 
-              {/* Footer con fecha */}
-              <div
-                style={{
-                  marginTop: '0.85rem',
-                  paddingTop: '0.6rem',
-                  borderTop: '1px dashed var(--border-color)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  fontSize: '0.75rem',
-                  color: 'var(--text-muted)',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                  <Calendar size={13} />
-                  <span>{formatDate(note.createdAt)}</span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+                    {/* Fecha de carga */}
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.825rem', color: 'var(--text-secondary)' }}>
+                        <Calendar size={13} color="var(--text-muted)" />
+                        {formatDate(note.createdAt)}
+                      </div>
+                    </td>
+
+                    {/* Acciones */}
+                    <td style={{ textAlign: 'right' }}>
+                      <div style={{ display: 'inline-flex', gap: '0.35rem' }}>
+                        <button
+                          className="btn btn-secondary btn-icon"
+                          title="Editar Nota"
+                          onClick={() => {
+                            setNoteToEdit(note);
+                            setIsModalOpen(true);
+                          }}
+                        >
+                          <Edit2 size={15} />
+                        </button>
+                        <button
+                          className="btn btn-danger btn-icon"
+                          title="Eliminar Nota"
+                          onClick={() => handleDelete(note.id)}
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
       <SystemNoteModal
         isOpen={isModalOpen}
