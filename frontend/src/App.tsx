@@ -474,21 +474,21 @@ export const App: React.FC = () => {
                 >
                   <button
                     className={`btn ${systemTab === 'devices' ? 'btn-primary' : 'btn-secondary'}`}
-                    style={{ fontSize: '0.85rem', padding: '0.4rem 0.9rem' }}
+                    style={{ fontSize: '0.85rem', padding: '0.4rem 0.9rem', width: '140px', justifyContent: 'center' }}
                     onClick={() => setSystemTab('devices')}
                   >
                     <HardDrive size={15} /> Dispositivos
                   </button>
                   <button
                     className={`btn ${systemTab === 'notes' ? 'btn-primary' : 'btn-secondary'}`}
-                    style={{ fontSize: '0.85rem', padding: '0.4rem 0.9rem' }}
+                    style={{ fontSize: '0.85rem', padding: '0.4rem 0.9rem', width: '140px', justifyContent: 'center' }}
                     onClick={() => setSystemTab('notes')}
                   >
                     <FileText size={15} /> Notas
                   </button>
                   <button
                     className={`btn ${systemTab === 'attachments' ? 'btn-primary' : 'btn-secondary'}`}
-                    style={{ fontSize: '0.85rem', padding: '0.4rem 0.9rem' }}
+                    style={{ fontSize: '0.85rem', padding: '0.4rem 0.9rem', width: '140px', justifyContent: 'center' }}
                     onClick={() => setSystemTab('attachments')}
                   >
                     <Paperclip size={15} /> Adjuntos
