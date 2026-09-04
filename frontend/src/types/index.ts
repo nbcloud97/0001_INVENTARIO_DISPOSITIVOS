@@ -143,3 +143,19 @@ export interface BulkDeviceFormData {
   credentials?: DeviceCredentialItem[];
   notes?: string;
 }
+
+export interface DeviceType {
+  id: string;
+  name: string;
+  description?: string;
+  subsystemId: string;
+  subsystem?: Subsystem;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateDeviceTypeFormData {
+  name: string;
+  description?: string;
+  subsystemId: string;
+}

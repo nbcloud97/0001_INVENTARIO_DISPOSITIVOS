@@ -6,6 +6,8 @@ import { SystemTable } from './components/SystemTable';
 import { SystemModal } from './components/SystemModal';
 import { SubsystemTable } from './components/SubsystemTable';
 import { SubsystemModal } from './components/SubsystemModal';
+import { DeviceTypeTable } from './components/DeviceTypeTable';
+import { DeviceTypeModal } from './components/DeviceTypeModal';
 import { DeviceTable } from './components/DeviceTable';
 import { DeviceModal } from './components/DeviceModal';
 import { BulkDeviceModal } from './components/BulkDeviceModal';
@@ -16,10 +18,10 @@ import { LoginView } from './components/LoginView';
 import { SystemNotesView } from './components/SystemNotesView';
 import { SystemAttachmentsView } from './components/SystemAttachmentsView';
 
-import { Client, Subsystem, System, Device } from './types';
+import { Client, Subsystem, System, Device, DeviceType } from './types';
 import { api, UserProfile } from './services/api';
 import { exportSystemDevicesToExcel } from './utils/excelExport';
-import { ArrowLeft, Building2, Cpu, Layers3, FileSpreadsheet, ChevronDown, Upload, HardDrive, FileText, Paperclip, Edit2 } from 'lucide-react';
+import { ArrowLeft, Building2, Cpu, Layers3, FileSpreadsheet, ChevronDown, Upload, HardDrive, FileText, Paperclip, Edit2, Shield } from 'lucide-react';
 
 export const App: React.FC = () => {
   // Autenticación State
@@ -51,6 +53,9 @@ export const App: React.FC = () => {
   // Navigation: Main tabs ('clients' or 'config')
   const [activeTab, setActiveTab] = useState<'clients' | 'config'>('clients');
 
+  // Sub-pestañas en Configuración ('subsystems' | 'deviceTypes')
+  const [configTab, setConfigTab] = useState<'subsystems' | 'deviceTypes'>('subsystems');
+
   // Sub-tabs dentro de un Sistema ('devices' | 'notes' | 'attachments')
   const [systemTab, setSystemTab] = useState<'devices' | 'notes' | 'attachments'>('devices');
 
@@ -74,6 +79,7 @@ export const App: React.FC = () => {
   const [subsystems, setSubsystems] = useState<Subsystem[]>([]);
   const [systems, setSystems] = useState<System[]>([]);
   const [devices, setDevices] = useState<Device[]>([]);
+  const [deviceTypes, setDeviceTypes] = useState<DeviceType[]>([]);
 
   // Selection hierarchy for Clientes tab: Client -> System -> Devices
   const [selectedClientId, setSelectedClientId] = useState<string>('');
@@ -91,6 +97,9 @@ export const App: React.FC = () => {
   const [isSubsystemModalOpen, setIsSubsystemModalOpen] = useState(false);
   const [subsystemToEdit, setSubsystemToEdit] = useState<Subsystem | null>(null);
 
+  const [isDeviceTypeModalOpen, setIsDeviceTypeModalOpen] = useState(false);
+  const [deviceTypeToEdit, setDeviceTypeToEdit] = useState<DeviceType | null>(null);
+
   const [isDeviceModalOpen, setIsDeviceModalOpen] = useState(false);
   const [deviceToEdit, setDeviceToEdit] = useState<Device | null>(null);
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
@@ -106,7 +115,7 @@ export const App: React.FC = () => {
   // Confirmation Warning Modal State
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
-    type: 'client' | 'system' | 'subsystem' | 'device' | null;
+    type: 'client' | 'system' | 'subsystem' | 'device' | 'deviceType' | null;
     id: string;
     title: string;
     message: string;
@@ -142,7 +151,7 @@ export const App: React.FC = () => {
     if (!user) return;
     try {
       setLoading(true);
-      const [cls, subs, sysList, devs] = await Promise.all([
+      const [cls, subs, sysList, devs, dTypes] = await Promise.all([
         api.getClients(),
         api.getSubsystems(),
         api.getSystems(selectedClientId || undefined),
@@ -152,11 +161,13 @@ export const App: React.FC = () => {
           subsystemId: selectedSubsystemFilterId || undefined,
           search: searchTerm || undefined,
         }),
+        api.getDeviceTypes(),
       ]);
       setClients(cls);
       setSubsystems(subs);
       setSystems(sysList);
       setDevices(devs);
+      setDeviceTypes(dTypes);
     } catch (err: any) {
       console.error('Error al cargar datos:', err);
     } finally {
@@ -215,6 +226,17 @@ export const App: React.FC = () => {
     });
   };
 
+  const requestDeleteDeviceType = (id: string) => {
+    const target = deviceTypes.find(dt => dt.id === id);
+    setConfirmModal({
+      isOpen: true,
+      type: 'deviceType',
+      id,
+      title: 'Eliminar Tipo de Dispositivo',
+      message: `¿Deseas eliminar el tipo de dispositivo "${target?.name || ''}" del catálogo?`,
+    });
+  };
+
   // Execute Confirmed Delete
   const handleExecuteDelete = async () => {
     const { type, id } = confirmModal;
@@ -237,6 +259,8 @@ export const App: React.FC = () => {
         await api.deleteSubsystem(id);
       } else if (type === 'device') {
         await api.deleteDevice(id);
+      } else if (type === 'deviceType') {
+        await api.deleteDeviceType(id);
       }
       setConfirmModal((prev) => ({ ...prev, isOpen: false }));
       loadData();
@@ -621,29 +645,82 @@ export const App: React.FC = () => {
         )}
 
         {/* ========================================================================= */}
-        {/* PESTAÑA 2: CONFIGURACIÓN (Solo Subsistemas)                              */}
+        {/* PESTAÑA 2: CONFIGURACIÓN (Subsistemas & Dispositivos)                    */}
         {/* ========================================================================= */}
         {activeTab === 'config' && (
           <div>
-            <div style={{ marginBottom: '1.25rem' }}>
-              <h2 style={{ fontSize: '1.25rem' }}>Configuraci&oacute;n de Subsistemas</h2>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.2rem' }}>
-                Gestiona los subsistemas técnicos (CCTV, Intrusión, Control de Accesos, PCI, Redes, etc.)
-              </p>
+            {/* Sub-Pestañas de Configuración */}
+            <div
+              style={{
+                display: 'flex',
+                gap: '0.5rem',
+                marginBottom: '1.25rem',
+                borderBottom: '1px solid var(--border-color)',
+                paddingBottom: '0.5rem',
+              }}
+            >
+              <button
+                className={`btn ${configTab === 'subsystems' ? 'btn-primary' : 'btn-secondary'}`}
+                style={{ fontSize: '0.85rem', padding: '0.4rem 0.9rem', width: '140px', justifyContent: 'center' }}
+                onClick={() => setConfigTab('subsystems')}
+              >
+                <Shield size={15} /> Subsistemas
+              </button>
+              <button
+                className={`btn ${configTab === 'deviceTypes' ? 'btn-primary' : 'btn-secondary'}`}
+                style={{ fontSize: '0.85rem', padding: '0.4rem 0.9rem', width: '140px', justifyContent: 'center' }}
+                onClick={() => setConfigTab('deviceTypes')}
+              >
+                <HardDrive size={15} /> Dispositivos
+              </button>
             </div>
 
-            <SubsystemTable
-              subsystems={subsystems}
-              onEditSubsystem={(sub) => {
-                setSubsystemToEdit(sub);
-                setIsSubsystemModalOpen(true);
-              }}
-              onDeleteSubsystem={requestDeleteSubsystem}
-              onOpenNewSubsystem={() => {
-                setSubsystemToEdit(null);
-                setIsSubsystemModalOpen(true);
-              }}
-            />
+            {configTab === 'subsystems' ? (
+              <div>
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <h2 style={{ fontSize: '1.25rem' }}>Configuraci&oacute;n de Subsistemas</h2>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.2rem' }}>
+                    Gestiona los subsistemas técnicos (CCTV, Intrusión, Control de Accesos, PCI, Redes, etc.)
+                  </p>
+                </div>
+
+                <SubsystemTable
+                  subsystems={subsystems}
+                  onEditSubsystem={(sub) => {
+                    setSubsystemToEdit(sub);
+                    setIsSubsystemModalOpen(true);
+                  }}
+                  onDeleteSubsystem={requestDeleteSubsystem}
+                  onOpenNewSubsystem={() => {
+                    setSubsystemToEdit(null);
+                    setIsSubsystemModalOpen(true);
+                  }}
+                />
+              </div>
+            ) : (
+              <div>
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <h2 style={{ fontSize: '1.25rem' }}>Cat&aacute;logo de Tipos de Dispositivo</h2>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.2rem' }}>
+                    Crea y gestiona tipos de dispositivo asociados obligatoriamente a un subsistema (ej: C&aacute;mara de v&iacute;deo en CCTV).
+                  </p>
+                </div>
+
+                <DeviceTypeTable
+                  deviceTypes={deviceTypes}
+                  subsystems={subsystems}
+                  onEditDeviceType={(dt) => {
+                    setDeviceTypeToEdit(dt);
+                    setIsDeviceTypeModalOpen(true);
+                  }}
+                  onDeleteDeviceType={requestDeleteDeviceType}
+                  onOpenNewDeviceType={() => {
+                    setDeviceTypeToEdit(null);
+                    setIsDeviceTypeModalOpen(true);
+                  }}
+                />
+              </div>
+            )}
           </div>
         )}
       </main>
@@ -670,6 +747,14 @@ export const App: React.FC = () => {
         onClose={() => setIsSubsystemModalOpen(false)}
         onSuccess={loadData}
         subsystemToEdit={subsystemToEdit}
+      />
+
+      <DeviceTypeModal
+        isOpen={isDeviceTypeModalOpen}
+        onClose={() => setIsDeviceTypeModalOpen(false)}
+        onSuccess={loadData}
+        deviceTypeToEdit={deviceTypeToEdit}
+        subsystems={subsystems}
       />
 
       <DeviceModal

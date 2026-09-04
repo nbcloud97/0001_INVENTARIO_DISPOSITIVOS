@@ -6,6 +6,7 @@ import { DeviceController } from '../controllers/deviceController';
 import { AuthController } from '../controllers/authController';
 import { SystemNoteController } from '../controllers/systemNoteController';
 import { SystemAttachmentController, uploadMiddleware } from '../controllers/systemAttachmentController';
+import { DeviceTypeController } from '../controllers/deviceTypeController';
 
 export const apiRouter = Router();
 
@@ -26,6 +27,13 @@ apiRouter.get('/subsystems/:id', SubsystemController.getById);
 apiRouter.post('/subsystems', SubsystemController.create);
 apiRouter.put('/subsystems/:id', SubsystemController.update);
 apiRouter.delete('/subsystems/:id', SubsystemController.delete);
+
+// Rutas de Tipos de Dispositivo (Catálogo por Subsistema)
+apiRouter.get('/device-types', DeviceTypeController.getAll);
+apiRouter.get('/device-types/:id', DeviceTypeController.getById);
+apiRouter.post('/device-types', DeviceTypeController.create);
+apiRouter.put('/device-types/:id', DeviceTypeController.update);
+apiRouter.delete('/device-types/:id', DeviceTypeController.delete);
 
 // Rutas de Sistemas (Jerarquía Cliente -> Sistema -> Dispositivos, Notas & Adjuntos)
 apiRouter.get('/systems', SystemController.getAll);

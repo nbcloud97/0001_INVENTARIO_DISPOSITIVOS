@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, HardDrive, Lock, Plus, Trash2 } from 'lucide-react';
-import { Client, Subsystem, System, Device, CreateDeviceFormData, DeviceCredentialItem } from '../types';
+import { Client, Subsystem, System, Device, CreateDeviceFormData, DeviceCredentialItem, DeviceType } from '../types';
 import { api } from '../services/api';
 
 interface DeviceModalProps {
@@ -43,6 +43,15 @@ export const DeviceModal: React.FC<DeviceModalProps> = ({
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [availableTypes, setAvailableTypes] = useState<DeviceType[]>([]);
+
+  useEffect(() => {
+    if (formData.subsystemId) {
+      api.getDeviceTypes(formData.subsystemId).then(setAvailableTypes).catch(console.error);
+    } else {
+      setAvailableTypes([]);
+    }
+  }, [formData.subsystemId]);
 
   useEffect(() => {
     if (deviceToEdit) {
@@ -211,10 +220,18 @@ export const DeviceModal: React.FC<DeviceModalProps> = ({
                 <input
                   type="text"
                   className="form-input"
+                  list="device-types-list"
                   value={formData.assignedName}
                   onChange={(e) => setFormData({ ...formData, assignedName: e.target.value })}
                   required
                 />
+                {availableTypes.length > 0 && (
+                  <datalist id="device-types-list">
+                    {availableTypes.map((dt) => (
+                      <option key={dt.id} value={dt.name} />
+                    ))}
+                  </datalist>
+                )}
               </div>
 
               {/* Marca */}

@@ -1,4 +1,4 @@
-import { Client, Subsystem, System, Device, CreateDeviceFormData, BulkDeviceFormData, DeviceCredentialItem, SystemNote, SystemAttachment } from '../types';
+import { Client, Subsystem, System, Device, CreateDeviceFormData, BulkDeviceFormData, DeviceCredentialItem, SystemNote, SystemAttachment, DeviceType, CreateDeviceTypeFormData } from '../types';
 
 const API_BASE = '/api/v1';
 
@@ -67,6 +67,18 @@ export const api = {
   createSubsystem: (data: Partial<Subsystem>) => fetchJson<Subsystem>('/subsystems', { method: 'POST', body: JSON.stringify(data) }),
   updateSubsystem: (id: string, data: Partial<Subsystem>) => fetchJson<Subsystem>(`/subsystems/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteSubsystem: (id: string) => fetchJson<{ message: string }>(`/subsystems/${id}`, { method: 'DELETE' }),
+
+  // Tipos de Dispositivo (Catálogo por Subsistema)
+  getDeviceTypes: (subsystemId?: string) => {
+    const query = subsystemId ? `?subsystemId=${subsystemId}` : '';
+    return fetchJson<DeviceType[]>(`/device-types${query}`);
+  },
+  getDeviceTypeById: (id: string) => fetchJson<DeviceType>(`/device-types/${id}`),
+  createDeviceType: (data: CreateDeviceTypeFormData) =>
+    fetchJson<DeviceType>('/device-types', { method: 'POST', body: JSON.stringify(data) }),
+  updateDeviceType: (id: string, data: Partial<CreateDeviceTypeFormData>) =>
+    fetchJson<DeviceType>(`/device-types/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteDeviceType: (id: string) => fetchJson<{ message: string }>(`/device-types/${id}`, { method: 'DELETE' }),
 
   // Sistemas
   getSystems: (clientId?: string) => {

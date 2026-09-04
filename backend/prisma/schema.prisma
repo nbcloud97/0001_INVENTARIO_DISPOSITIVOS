@@ -41,8 +41,21 @@ model Subsystem {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  systems System[]
-  devices Device[]
+  systems     System[]
+  devices     Device[]
+  deviceTypes DeviceType[]
+}
+
+model DeviceType {
+  id          String    @id @default(uuid())
+  name        String    // Nombre del tipo de dispositivo (ej: Cámara de vídeo, Grabadora)
+  description String?   // Descripción u observaciones
+  subsystemId String
+  subsystem   Subsystem @relation(fields: [subsystemId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([subsystemId])
 }
 
 model System {
