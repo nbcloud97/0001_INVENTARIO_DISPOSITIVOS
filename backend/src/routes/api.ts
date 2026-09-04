@@ -7,6 +7,7 @@ import { AuthController } from '../controllers/authController';
 import { SystemNoteController } from '../controllers/systemNoteController';
 import { SystemAttachmentController, uploadMiddleware } from '../controllers/systemAttachmentController';
 import { DeviceTypeController } from '../controllers/deviceTypeController';
+import { DeviceStatusController } from '../controllers/deviceStatusController';
 
 export const apiRouter = Router();
 
@@ -34,6 +35,13 @@ apiRouter.get('/device-types/:id', DeviceTypeController.getById);
 apiRouter.post('/device-types', DeviceTypeController.create);
 apiRouter.put('/device-types/:id', DeviceTypeController.update);
 apiRouter.delete('/device-types/:id', DeviceTypeController.delete);
+
+// Rutas de Estados de Dispositivo (Configuración de Estados)
+apiRouter.get('/device-statuses', DeviceStatusController.getAll);
+apiRouter.get('/device-statuses/:id', DeviceStatusController.getById);
+apiRouter.post('/device-statuses', DeviceStatusController.create);
+apiRouter.put('/device-statuses/:id', DeviceStatusController.update);
+apiRouter.delete('/device-statuses/:id', DeviceStatusController.delete);
 
 // Rutas de Sistemas (Jerarquía Cliente -> Sistema -> Dispositivos, Notas & Adjuntos)
 apiRouter.get('/systems', SystemController.getAll);

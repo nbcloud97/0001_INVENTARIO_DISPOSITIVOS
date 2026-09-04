@@ -8,6 +8,8 @@ import { SubsystemTable } from './components/SubsystemTable';
 import { SubsystemModal } from './components/SubsystemModal';
 import { DeviceTypeTable } from './components/DeviceTypeTable';
 import { DeviceTypeModal } from './components/DeviceTypeModal';
+import { DeviceStatusTable } from './components/DeviceStatusTable';
+import { DeviceStatusModal } from './components/DeviceStatusModal';
 import { DeviceTable } from './components/DeviceTable';
 import { DeviceModal } from './components/DeviceModal';
 import { BulkDeviceModal } from './components/BulkDeviceModal';
@@ -19,10 +21,10 @@ import { SystemNotesView } from './components/SystemNotesView';
 import { SystemAttachmentsView } from './components/SystemAttachmentsView';
 import { ReportsView } from './components/ReportsView';
 
-import { Client, Subsystem, System, Device, DeviceType } from './types';
+import { Client, Subsystem, System, Device, DeviceType, DeviceStatus } from './types';
 import { api, UserProfile } from './services/api';
 import { exportSystemDevicesToExcel } from './utils/excelExport';
-import { ArrowLeft, Building2, Cpu, Layers3, FileSpreadsheet, ChevronDown, Upload, HardDrive, FileText, Paperclip, Edit2, Shield } from 'lucide-react';
+import { ArrowLeft, Building2, Cpu, Layers3, FileSpreadsheet, ChevronDown, Upload, HardDrive, FileText, Paperclip, Edit2, Shield, Tag } from 'lucide-react';
 
 export const App: React.FC = () => {
   // Autenticación State
@@ -54,8 +56,8 @@ export const App: React.FC = () => {
   // Navigation: Main tabs ('clients' | 'reports' | 'config')
   const [activeTab, setActiveTab] = useState<'clients' | 'reports' | 'config'>('clients');
 
-  // Sub-pestañas en Configuración ('subsystems' | 'deviceTypes')
-  const [configTab, setConfigTab] = useState<'subsystems' | 'deviceTypes'>('subsystems');
+  // Sub-pestañas en Configuración ('subsystems' | 'deviceTypes' | 'statuses')
+  const [configTab, setConfigTab] = useState<'subsystems' | 'deviceTypes' | 'statuses'>('subsystems');
 
   // Sub-tabs dentro de un Sistema ('devices' | 'notes' | 'attachments')
   const [systemTab, setSystemTab] = useState<'devices' | 'notes' | 'attachments'>('devices');
@@ -81,6 +83,7 @@ export const App: React.FC = () => {
   const [systems, setSystems] = useState<System[]>([]);
   const [devices, setDevices] = useState<Device[]>([]);
   const [deviceTypes, setDeviceTypes] = useState<DeviceType[]>([]);
+  const [deviceStatuses, setDeviceStatuses] = useState<DeviceStatus[]>([]);
 
   // Selection hierarchy for Clientes tab: Client -> System -> Devices
   const [selectedClientId, setSelectedClientId] = useState<string>('');
@@ -101,6 +104,9 @@ export const App: React.FC = () => {
   const [isDeviceTypeModalOpen, setIsDeviceTypeModalOpen] = useState(false);
   const [deviceTypeToEdit, setDeviceTypeToEdit] = useState<DeviceType | null>(null);
 
+  const [isDeviceStatusModalOpen, setIsDeviceStatusModalOpen] = useState(false);
+  const [deviceStatusToEdit, setDeviceStatusToEdit] = useState<DeviceStatus | null>(null);
+
   const [isDeviceModalOpen, setIsDeviceModalOpen] = useState(false);
   const [deviceToEdit, setDeviceToEdit] = useState<Device | null>(null);
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
@@ -116,7 +122,7 @@ export const App: React.FC = () => {
   // Confirmation Warning Modal State
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
-    type: 'client' | 'system' | 'subsystem' | 'device' | 'deviceType' | null;
+    type: 'client' | 'system' | 'subsystem' | 'device' | 'deviceType' | 'deviceStatus' | null;
     id: string;
     title: string;
     message: string;
@@ -152,7 +158,7 @@ export const App: React.FC = () => {
     if (!user) return;
     try {
       setLoading(true);
-      const [cls, subs, sysList, devs, dTypes] = await Promise.all([
+      const [cls, subs, sysList, devs, dTypes, dStatuses] = await Promise.all([
         api.getClients(),
         api.getSubsystems(),
         api.getSystems(selectedClientId || undefined),
@@ -163,12 +169,14 @@ export const App: React.FC = () => {
           search: searchTerm || undefined,
         }),
         api.getDeviceTypes(),
+        api.getDeviceStatuses(),
       ]);
       setClients(cls);
       setSubsystems(subs);
       setSystems(sysList);
       setDevices(devs);
       setDeviceTypes(dTypes);
+      setDeviceStatuses(dStatuses);
     } catch (err: any) {
       console.error('Error al cargar datos:', err);
     } finally {
@@ -247,6 +255,35 @@ export const App: React.FC = () => {
     });
   };
 
+  const requestDeleteDeviceStatus = (id: string) => {
+    const target = deviceStatuses.find(st => st.id === id);
+    const countAssigned = devices.filter(d => d.statusId === id).length;
+
+    if (countAssigned > 0) {
+      alert(
+        `⚠️ ADVERTENCIA: No se puede eliminar el estado "${target?.name || ''}" porque está asignado a ${countAssigned} dispositivo(s) en el inventario.\n\nPara poder eliminar este estado, primero debes reasignar o eliminar los dispositivos asociados.`
+      );
+      return;
+    }
+
+    setConfirmModal({
+      isOpen: true,
+      type: 'deviceStatus',
+      id,
+      title: 'Eliminar Estado de Dispositivo',
+      message: `¿Deseas eliminar el estado "${target?.name || ''}" de la configuración?`,
+    });
+  };
+
+  const handleSaveDeviceStatus = async (data: { name: string; color?: string; description?: string }) => {
+    if (deviceStatusToEdit) {
+      await api.updateDeviceStatus(deviceStatusToEdit.id, data);
+    } else {
+      await api.createDeviceStatus(data);
+    }
+    loadData();
+  };
+
   // Execute Confirmed Delete
   const handleExecuteDelete = async () => {
     const { type, id } = confirmModal;
@@ -271,6 +308,8 @@ export const App: React.FC = () => {
         await api.deleteDevice(id);
       } else if (type === 'deviceType') {
         await api.deleteDeviceType(id);
+      } else if (type === 'deviceStatus') {
+        await api.deleteDeviceStatus(id);
       }
       setConfirmModal((prev) => ({ ...prev, isOpen: false }));
       loadData();
@@ -700,6 +739,13 @@ export const App: React.FC = () => {
               >
                 <HardDrive size={15} /> Dispositivos
               </button>
+              <button
+                className={`btn ${configTab === 'statuses' ? 'btn-primary' : 'btn-secondary'}`}
+                style={{ fontSize: '0.85rem', padding: '0.4rem 0.9rem', width: '140px', justifyContent: 'center' }}
+                onClick={() => setConfigTab('statuses')}
+              >
+                <Tag size={15} /> Estados
+              </button>
             </div>
 
             {configTab === 'subsystems' ? (
@@ -724,7 +770,7 @@ export const App: React.FC = () => {
                   }}
                 />
               </div>
-            ) : (
+            ) : configTab === 'deviceTypes' ? (
               <div>
                 <div style={{ marginBottom: '1.25rem' }}>
                   <h2 style={{ fontSize: '1.25rem' }}>Cat&aacute;logo de Tipos de Dispositivo</h2>
@@ -747,6 +793,29 @@ export const App: React.FC = () => {
                     setIsDeviceTypeModalOpen(true);
                   }}
                   onSelectDeviceDetails={(dev) => setSelectedDetailsDevice(dev)}
+                />
+              </div>
+            ) : (
+              <div>
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <h2 style={{ fontSize: '1.25rem' }}>Estados de Dispositivo</h2>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', marginTop: '0.2rem' }}>
+                    Define y gestiona los estados de los dispositivos (Operativo, Baja, Falta instalaci&oacute;n, etc.) con sus respectivos colores.
+                  </p>
+                </div>
+
+                <DeviceStatusTable
+                  statuses={deviceStatuses}
+                  devices={devices}
+                  onEditStatus={(st) => {
+                    setDeviceStatusToEdit(st);
+                    setIsDeviceStatusModalOpen(true);
+                  }}
+                  onDeleteStatus={requestDeleteDeviceStatus}
+                  onOpenNewStatus={() => {
+                    setDeviceStatusToEdit(null);
+                    setIsDeviceStatusModalOpen(true);
+                  }}
                 />
               </div>
             )}
@@ -786,6 +855,13 @@ export const App: React.FC = () => {
         subsystems={subsystems}
       />
 
+      <DeviceStatusModal
+        isOpen={isDeviceStatusModalOpen}
+        onClose={() => setIsDeviceStatusModalOpen(false)}
+        onSave={handleSaveDeviceStatus}
+        statusToEdit={deviceStatusToEdit}
+      />
+
       <DeviceModal
         isOpen={isDeviceModalOpen}
         onClose={() => setIsDeviceModalOpen(false)}
@@ -794,6 +870,7 @@ export const App: React.FC = () => {
         clients={clients}
         subsystems={subsystems}
         systems={systems}
+        deviceStatuses={deviceStatuses}
         defaultSystemId={selectedSystemId}
       />
 
@@ -816,19 +893,22 @@ export const App: React.FC = () => {
       />
 
       <DeviceDetailsModal
-        isOpen={Boolean(selectedDetailsDevice)}
+        isOpen={!!selectedDetailsDevice}
         onClose={() => setSelectedDetailsDevice(null)}
         device={selectedDetailsDevice}
-        onEditDevice={handleEditDevice}
+        onEditDevice={(dev) => {
+          setSelectedDetailsDevice(null);
+          handleEditDevice(dev);
+        }}
       />
 
       <ConfirmModal
         isOpen={confirmModal.isOpen}
         title={confirmModal.title}
         message={confirmModal.message}
+        loading={deleting}
         onConfirm={handleExecuteDelete}
         onCancel={() => setConfirmModal((prev) => ({ ...prev, isOpen: false }))}
-        loading={deleting}
       />
     </div>
   );

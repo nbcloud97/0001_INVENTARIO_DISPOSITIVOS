@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, HardDrive, Lock, Plus, Trash2 } from 'lucide-react';
-import { Client, Subsystem, System, Device, CreateDeviceFormData, DeviceCredentialItem, DeviceType } from '../types';
+import { Client, Subsystem, System, Device, CreateDeviceFormData, DeviceCredentialItem, DeviceType, DeviceStatus } from '../types';
 import { api } from '../services/api';
 
 interface DeviceModalProps {
@@ -11,6 +11,7 @@ interface DeviceModalProps {
   clients: Client[];
   subsystems: Subsystem[];
   systems: System[];
+  deviceStatuses?: DeviceStatus[];
   defaultSystemId?: string;
 }
 
@@ -22,6 +23,7 @@ export const DeviceModal: React.FC<DeviceModalProps> = ({
   clients,
   subsystems,
   systems,
+  deviceStatuses = [],
   defaultSystemId,
 }) => {
   const [formData, setFormData] = useState<CreateDeviceFormData>({
@@ -61,6 +63,7 @@ export const DeviceModal: React.FC<DeviceModalProps> = ({
         clientId: deviceToEdit.clientId,
         subsystemId: deviceToEdit.subsystemId,
         deviceTypeId: deviceToEdit.deviceTypeId || '',
+        statusId: deviceToEdit.statusId || '',
         brand: deviceToEdit.brand || '',
         model: deviceToEdit.model || '',
         serialNumber: deviceToEdit.serialNumber || '',
@@ -91,6 +94,7 @@ export const DeviceModal: React.FC<DeviceModalProps> = ({
         clientId: activeSys?.clientId || (clients[0]?.id || ''),
         subsystemId: activeSys?.subsystemId || (subsystems[0]?.id || ''),
         deviceTypeId: '',
+        statusId: deviceStatuses[0]?.id || '',
         brand: '',
         model: '',
         serialNumber: '',
@@ -266,6 +270,23 @@ export const DeviceModal: React.FC<DeviceModalProps> = ({
                     ⚠️ No hay tipos de dispositivo para este subsistema. Debes crearlos en <strong>Configuración &gt; Dispositivos</strong>.
                   </div>
                 )}
+              </div>
+
+              {/* Estado del Dispositivo (Opcional) */}
+              <div className="form-group">
+                <label className="form-label">Estado del Dispositivo</label>
+                <select
+                  className="form-select"
+                  value={formData.statusId || ''}
+                  onChange={(e) => setFormData({ ...formData, statusId: e.target.value })}
+                >
+                  <option value="">-- Seleccionar Estado --</option>
+                  {deviceStatuses.map((st) => (
+                    <option key={st.id} value={st.id}>
+                      {st.name}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* Nombre Asignado Obligatorio */}

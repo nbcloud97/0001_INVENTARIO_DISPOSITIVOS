@@ -1,4 +1,4 @@
-import { Client, Subsystem, System, Device, CreateDeviceFormData, BulkDeviceFormData, DeviceCredentialItem, SystemNote, SystemAttachment, DeviceType, CreateDeviceTypeFormData } from '../types';
+import { Client, Subsystem, System, Device, CreateDeviceFormData, BulkDeviceFormData, DeviceCredentialItem, SystemNote, SystemAttachment, DeviceType, CreateDeviceTypeFormData, DeviceStatus } from '../types';
 
 const API_BASE = '/api/v1';
 
@@ -69,16 +69,18 @@ export const api = {
   deleteSubsystem: (id: string) => fetchJson<{ message: string }>(`/subsystems/${id}`, { method: 'DELETE' }),
 
   // Tipos de Dispositivo (Catálogo por Subsistema)
-  getDeviceTypes: (subsystemId?: string) => {
-    const query = subsystemId ? `?subsystemId=${subsystemId}` : '';
-    return fetchJson<DeviceType[]>(`/device-types${query}`);
-  },
-  getDeviceTypeById: (id: string) => fetchJson<DeviceType>(`/device-types/${id}`),
-  createDeviceType: (data: CreateDeviceTypeFormData) =>
-    fetchJson<DeviceType>('/device-types', { method: 'POST', body: JSON.stringify(data) }),
-  updateDeviceType: (id: string, data: Partial<CreateDeviceTypeFormData>) =>
-    fetchJson<DeviceType>(`/device-types/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  getDeviceTypes: (subsystemId?: string) => fetchJson<DeviceType[]>(`/device-types${subsystemId ? `?subsystemId=${subsystemId}` : ''}`),
+  createDeviceType: (data: CreateDeviceTypeFormData) => fetchJson<DeviceType>('/device-types', { method: 'POST', body: JSON.stringify(data) }),
+  updateDeviceType: (id: string, data: Partial<CreateDeviceTypeFormData>) => fetchJson<DeviceType>(`/device-types/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteDeviceType: (id: string) => fetchJson<{ message: string }>(`/device-types/${id}`, { method: 'DELETE' }),
+
+  // Estados de Dispositivo (Configuración de Estados)
+  getDeviceStatuses: () => fetchJson<DeviceStatus[]>('/device-statuses'),
+  createDeviceStatus: (data: { name: string; color?: string; description?: string }) =>
+    fetchJson<DeviceStatus>('/device-statuses', { method: 'POST', body: JSON.stringify(data) }),
+  updateDeviceStatus: (id: string, data: { name?: string; color?: string; description?: string }) =>
+    fetchJson<DeviceStatus>(`/device-statuses/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteDeviceStatus: (id: string) => fetchJson<{ message: string }>(`/device-statuses/${id}`, { method: 'DELETE' }),
 
   // Sistemas
   getSystems: (clientId?: string) => {

@@ -53,6 +53,22 @@ async function main() {
     deviceTypesMap.set(dt.name, created.id);
   }
 
+  // 1.8. Crear Estados de Dispositivo por defecto
+  const statusesData = [
+    { name: 'Operativo', color: '#10b981', description: 'Dispositivo funcionando correctamente en producción' },
+    { name: 'Falta instalación', color: '#f59e0b', description: 'Pendiente de montaje, cableado o configuración' },
+    { name: 'En mantenimiento', color: '#06b6d4', description: 'En revisión técnica o sustitución temporal' },
+    { name: 'Baja', color: '#ef4444', description: 'Dispositivo retirado o fuera de servicio' },
+  ];
+
+  for (const st of statusesData) {
+    await prisma.deviceStatus.upsert({
+      where: { name: st.name },
+      update: { color: st.color, description: st.description },
+      create: st,
+    });
+  }
+
   // 2. Crear Cliente de Prueba 1 con los campos requeridos (Nombre comercial, Nombre fiscal, NIF, ID Manual, notas)
   const client1 = await prisma.client.create({
     data: {

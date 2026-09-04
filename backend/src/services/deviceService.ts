@@ -14,6 +14,7 @@ export interface CreateDeviceInput {
   clientId?: string;
   subsystemId: string;
   deviceTypeId?: string;
+  statusId?: string;
   brand?: string;
   model?: string;
   serialNumber?: string;
@@ -32,6 +33,7 @@ export interface BulkCreateDevicesInput {
   clientId?: string;
   subsystemId: string;
   deviceTypeId?: string;
+  statusId?: string;
   brand?: string;
   model?: string;
   baseName?: string;
@@ -102,6 +104,7 @@ export class DeviceService {
         client: { select: { id: true, name: true } },
         subsystem: { select: { id: true, name: true, color: true, icon: true } },
         deviceType: { select: { id: true, name: true } },
+        status: { select: { id: true, name: true, color: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -124,6 +127,8 @@ export class DeviceService {
       return {
         ...d,
         deviceTypeName: d.deviceType?.name || null,
+        statusName: d.status?.name || null,
+        statusColor: d.status?.color || null,
         hasCredentials: Boolean(d.credentialsEncrypted),
         credentialsCount: credsCount,
         credentialsEncrypted: undefined,
@@ -139,6 +144,7 @@ export class DeviceService {
         client: true,
         subsystem: true,
         deviceType: true,
+        status: true,
       },
     });
 
@@ -157,6 +163,8 @@ export class DeviceService {
     return {
       ...device,
       deviceTypeName: device.deviceType?.name || null,
+      statusName: device.status?.name || null,
+      statusColor: device.status?.color || null,
       hasCredentials: Boolean(device.credentialsEncrypted),
       credentialsCount: credsCount,
       credentialsEncrypted: undefined,
@@ -205,6 +213,7 @@ export class DeviceService {
         clientId,
         subsystemId,
         deviceTypeId: data.deviceTypeId,
+        statusId: data.statusId || null,
         brand: data.brand || null,
         model: data.model || null,
         serialNumber: data.serialNumber || null,
@@ -222,12 +231,15 @@ export class DeviceService {
         client: true,
         subsystem: true,
         deviceType: true,
+        status: true,
       },
     });
 
     return {
       ...device,
       deviceTypeName: device.deviceType?.name || null,
+      statusName: device.status?.name || null,
+      statusColor: device.status?.color || null,
       hasCredentials: Boolean(device.credentialsEncrypted),
       credentialsEncrypted: undefined,
     };
@@ -451,6 +463,7 @@ export class DeviceService {
       ...(data.clientId && { clientId: data.clientId }),
       ...(data.subsystemId && { subsystemId: data.subsystemId }),
       ...(data.deviceTypeId && { deviceTypeId: data.deviceTypeId }),
+      ...(data.statusId !== undefined && { statusId: data.statusId || null }),
       ...(data.brand !== undefined && { brand: data.brand }),
       ...(data.model !== undefined && { model: data.model }),
       ...(data.serialNumber !== undefined && { serialNumber: data.serialNumber }),
@@ -475,14 +488,16 @@ export class DeviceService {
         client: true,
         subsystem: true,
         deviceType: true,
+        status: true,
       },
     });
 
     return {
       ...device,
       deviceTypeName: device.deviceType?.name || null,
+      statusName: device.status?.name || null,
+      statusColor: device.status?.color || null,
       hasCredentials: Boolean(device.credentialsEncrypted),
-      credentialsEncrypted: undefined,
     };
   }
 

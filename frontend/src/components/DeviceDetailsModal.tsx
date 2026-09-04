@@ -212,6 +212,30 @@ export const DeviceDetailsModal: React.FC<DeviceDetailsModalProps> = ({
                 </div>
               </>
             )}
+
+            {device.statusName && (
+              <>
+                <div style={{ color: 'var(--border-color)' }}>|</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Estado:</span>
+                  <span
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      padding: '0.15rem 0.55rem',
+                      borderRadius: '9999px',
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      background: `${device.statusColor || '#10b981'}20`,
+                      color: device.statusColor || '#10b981',
+                      border: `1px solid ${device.statusColor || '#10b981'}55`,
+                    }}
+                  >
+                    {device.statusName}
+                  </span>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Tarjetas Visuales de Datos Técnicos */}

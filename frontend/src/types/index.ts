@@ -80,6 +80,16 @@ export interface DeviceCredentialItem {
   notes?: string;
 }
 
+export interface DeviceStatus {
+  id: string;
+  name: string;
+  color?: string;
+  description?: string;
+  _count?: {
+    devices: number;
+  };
+}
+
 export interface Device {
   id: string;
   systemId: string;
@@ -100,6 +110,10 @@ export interface Device {
     id: string;
     name: string;
   };
+  statusId?: string;
+  statusName?: string;
+  statusColor?: string;
+  status?: DeviceStatus;
   brand?: string;
   model?: string;
   serialNumber?: string;
@@ -121,6 +135,7 @@ export interface CreateDeviceFormData {
   clientId?: string;
   subsystemId?: string;
   deviceTypeId: string;
+  statusId?: string;
   brand?: string;
   model?: string;
   serialNumber?: string;
@@ -139,6 +154,7 @@ export interface BulkDeviceFormData {
   clientId?: string;
   subsystemId?: string;
   deviceTypeId: string;
+  statusId?: string;
   brand?: string;
   model?: string;
   baseName?: string;
