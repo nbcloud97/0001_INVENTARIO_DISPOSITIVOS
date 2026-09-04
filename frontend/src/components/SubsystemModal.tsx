@@ -100,7 +100,6 @@ export const SubsystemModal: React.FC<SubsystemModalProps> = ({
               <input
                 type="text"
                 className="form-input"
-                placeholder="Ej: RED, CCTV, INTERFONÍA, CONTROL DE ACCESOS"
                 value={formData.name || ''}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 required
@@ -143,7 +142,6 @@ export const SubsystemModal: React.FC<SubsystemModalProps> = ({
               <textarea
                 className="form-textarea"
                 rows={3}
-                placeholder="Equipos que abarca este subsistema..."
                 value={formData.description || ''}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               />

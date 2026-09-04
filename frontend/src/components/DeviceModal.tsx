@@ -427,7 +427,6 @@ export const DeviceModal: React.FC<DeviceModalProps> = ({
                             <input
                               type="text"
                               className="form-input"
-                              placeholder="admin (Sensible a mayúsculas/minúsculas)"
                               value={cred.username || ''}
                               onChange={(e) => handleCredentialChange(idx, 'username', e.target.value)}
                             />
@@ -437,7 +436,6 @@ export const DeviceModal: React.FC<DeviceModalProps> = ({
                             <input
                               type="password"
                               className="form-input"
-                              placeholder="•••••••• (Sensible a mayúsculas/minúsculas)"
                               value={cred.password || ''}
                               onChange={(e) => handleCredentialChange(idx, 'password', e.target.value)}
                             />
