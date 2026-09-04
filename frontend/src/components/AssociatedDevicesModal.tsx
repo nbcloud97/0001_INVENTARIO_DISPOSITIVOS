@@ -57,7 +57,6 @@ export const AssociatedDevicesModal: React.FC<AssociatedDevicesModalProps> = ({
                     <th>Cliente</th>
                     <th>Sistema</th>
                     <th>Nombre de Dispositivo</th>
-                    <th>Dirección IP</th>
                     {onSelectDeviceDetails && <th style={{ textAlign: 'right' }}>Acción</th>}
                   </tr>
                 </thead>
@@ -89,15 +88,6 @@ export const AssociatedDevicesModal: React.FC<AssociatedDevicesModalProps> = ({
                           <div style={{ fontSize: '0.725rem', color: 'var(--text-muted)' }}>
                             {dev.brand} {dev.model}
                           </div>
-                        )}
-                      </td>
-
-                      {/* Dirección IP */}
-                      <td>
-                        {dev.ipAddress ? (
-                          <span className="code-font">{dev.ipAddress}</span>
-                        ) : (
-                          <span style={{ color: 'var(--text-muted)' }}>-</span>
                         )}
                       </td>
 
