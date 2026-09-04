@@ -438,7 +438,7 @@ export class DeviceService {
       ...(data.systemId && { systemId: data.systemId }),
       ...(data.clientId && { clientId: data.clientId }),
       ...(data.subsystemId && { subsystemId: data.subsystemId }),
-      ...(data.deviceTypeId !== undefined && { deviceTypeId: data.deviceTypeId || null }),
+      ...(data.deviceTypeId && { deviceTypeId: data.deviceTypeId }),
       ...(data.brand !== undefined && { brand: data.brand }),
       ...(data.model !== undefined && { model: data.model }),
       ...(data.serialNumber !== undefined && { serialNumber: data.serialNumber }),

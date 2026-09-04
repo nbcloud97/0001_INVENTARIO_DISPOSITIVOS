@@ -85,6 +85,7 @@ export function downloadImportTemplate() {
     {
       'NOMBRE ASIGNADO': 'CAM_ACCESO_PRINCIPAL_01',
       'SUBSISTEMA': 'CCTV',
+      'TIPO DE DISPOSITIVO': 'Cámara IP Domo',
       'MARCA': 'HIKVISION',
       'MODELO': 'DS-2CD2143G0-I',
       'NÚMERO DE SERIE': 'HKV-2026-987651',
@@ -101,6 +102,7 @@ export function downloadImportTemplate() {
     {
       'NOMBRE ASIGNADO': 'CENTRAL_INTRUSION_01',
       'SUBSISTEMA': 'INTRUSIÓN',
+      'TIPO DE DISPOSITIVO': 'Central de Alarma',
       'MARCA': 'HONEYWELL',
       'MODELO': 'GALAXY FLEX 50',
       'NÚMERO DE SERIE': 'HON-INT-2026-02',
@@ -121,6 +123,7 @@ export function downloadImportTemplate() {
   worksheet['!cols'] = [
     { wch: 28 }, // NOMBRE ASIGNADO
     { wch: 16 }, // SUBSISTEMA
+    { wch: 24 }, // TIPO DE DISPOSITIVO
     { wch: 16 }, // MARCA
     { wch: 18 }, // MODELO
     { wch: 20 }, // NÚMERO DE SERIE

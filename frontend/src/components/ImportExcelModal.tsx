@@ -75,6 +75,7 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
           return {
             assignedName: getItemValue(['NOMBRE ASIGNADO', 'NOMBRE', 'DISPOSITIVO', 'EQUIPO']),
             subsystemName: getItemValue(['SUBSISTEMA', 'SUB-SISTEMA']),
+            deviceTypeName: getItemValue(['TIPO DE DISPOSITIVO', 'TIPO DISPOSITIVO', 'TIPO DE EQUIPO', 'TIPO EQUIPO', 'TIPO']),
             brand: getItemValue(['MARCA']),
             model: getItemValue(['MODELO']),
             serialNumber: getItemValue(['NÚMERO DE SERIE', 'NUMERO DE SERIE', 'Nº SERIE', 'SERIE']),
@@ -90,7 +91,7 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
 
         // Filtrar elementos válidos que tengan algún dato relevante
         const validItems = mapped.filter(
-          (item) => item.assignedName || item.ipAddress || item.brand || item.subsystemName
+          (item) => item.assignedName || item.ipAddress || item.brand || item.subsystemName || item.deviceTypeName
         );
 
         if (validItems.length === 0) {
@@ -243,6 +244,7 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
                         <tr>
                           <th>Nombre</th>
                           <th>Subsistema</th>
+                          <th>Tipo</th>
                           <th>IP</th>
                           <th>Credenciales</th>
                           <th>RACK / SWITCH</th>
@@ -253,6 +255,7 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
                           <tr key={idx}>
                             <td style={{ fontWeight: 600, color: 'var(--accent-blue)' }}>{item.assignedName || `DISPOSITIVO_${idx+1}`}</td>
                             <td>{item.subsystemName || 'GENERAL'}</td>
+                            <td>{item.deviceTypeName || '-'}</td>
                             <td className="code-font">{item.ipAddress || '-'}</td>
                             <td>
                               {item.credentials ? (
