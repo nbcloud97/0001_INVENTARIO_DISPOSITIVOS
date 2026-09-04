@@ -229,6 +229,15 @@ export const App: React.FC = () => {
 
   const requestDeleteDeviceType = (id: string) => {
     const target = deviceTypes.find(dt => dt.id === id);
+    const countAssociated = devices.filter(d => d.deviceTypeId === id).length;
+
+    if (countAssociated > 0) {
+      alert(
+        `⚠️ ADVERTENCIA: No se puede eliminar el tipo de dispositivo "${target?.name || ''}" porque está asociado a ${countAssociated} dispositivo(s) en el inventario.\n\nPara poder eliminar este tipo, primero debes reasignar o eliminar los dispositivos asociados.`
+      );
+      return;
+    }
+
     setConfirmModal({
       isOpen: true,
       type: 'deviceType',
@@ -727,6 +736,7 @@ export const App: React.FC = () => {
                 <DeviceTypeTable
                   deviceTypes={deviceTypes}
                   subsystems={subsystems}
+                  devices={devices}
                   onEditDeviceType={(dt) => {
                     setDeviceTypeToEdit(dt);
                     setIsDeviceTypeModalOpen(true);

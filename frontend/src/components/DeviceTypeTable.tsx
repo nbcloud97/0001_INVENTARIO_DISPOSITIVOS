@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Search, Plus, HardDrive, Edit2, Trash2, Shield, Camera, Network, PhoneCall, KeyRound } from 'lucide-react';
-import { Subsystem, DeviceType } from '../types';
+import { Subsystem, DeviceType, Device } from '../types';
 
 interface DeviceTypeTableProps {
   deviceTypes: DeviceType[];
   subsystems: Subsystem[];
+  devices?: Device[];
   onEditDeviceType: (deviceType: DeviceType) => void;
   onDeleteDeviceType: (id: string) => void;
   onOpenNewDeviceType: () => void;
@@ -13,6 +14,7 @@ interface DeviceTypeTableProps {
 export const DeviceTypeTable: React.FC<DeviceTypeTableProps> = ({
   deviceTypes,
   subsystems,
+  devices = [],
   onEditDeviceType,
   onDeleteDeviceType,
   onOpenNewDeviceType,
@@ -101,6 +103,7 @@ export const DeviceTypeTable: React.FC<DeviceTypeTableProps> = ({
                 <tr>
                   <th>Tipo de Dispositivo</th>
                   <th>Subsistema Asignado</th>
+                  <th>Equipos Asociados</th>
                   <th>Descripción / Observaciones</th>
                   <th style={{ textAlign: 'right' }}>Acciones</th>
                 </tr>
@@ -108,6 +111,8 @@ export const DeviceTypeTable: React.FC<DeviceTypeTableProps> = ({
               <tbody>
                 {filteredDeviceTypes.map((dt) => {
                   const subColor = dt.subsystem?.color || '#0284c7';
+                  const associatedCount = devices.filter((d) => d.deviceTypeId === dt.id).length;
+
                   return (
                     <tr key={dt.id}>
                       {/* Nombre del tipo */}
@@ -141,6 +146,22 @@ export const DeviceTypeTable: React.FC<DeviceTypeTableProps> = ({
                         </span>
                       </td>
 
+                      {/* Equipos Asociados */}
+                      <td>
+                        <span
+                          className="badge"
+                          style={{
+                            background: associatedCount > 0 ? 'rgba(2, 132, 199, 0.15)' : 'var(--bg-primary)',
+                            color: associatedCount > 0 ? 'var(--accent-blue)' : 'var(--text-muted)',
+                            fontWeight: 700,
+                            fontSize: '0.75rem',
+                            border: '1px solid var(--border-color)',
+                          }}
+                        >
+                          {associatedCount} {associatedCount === 1 ? 'equipo' : 'equipos'}
+                        </span>
+                      </td>
+
                       {/* Descripción */}
                       <td>
                         {dt.description ? (
@@ -164,7 +185,12 @@ export const DeviceTypeTable: React.FC<DeviceTypeTableProps> = ({
                           </button>
                           <button
                             className="btn btn-danger btn-icon"
-                            title="Eliminar Tipo de Dispositivo"
+                            title={
+                              associatedCount > 0
+                                ? `No se puede eliminar: Asociado a ${associatedCount} equipo(s)`
+                                : 'Eliminar Tipo de Dispositivo'
+                            }
+                            style={associatedCount > 0 ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}
                             onClick={() => onDeleteDeviceType(dt.id)}
                           >
                             <Trash2 size={15} />

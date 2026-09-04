@@ -67,6 +67,16 @@ export class DeviceTypeService {
     const existing = await prisma.deviceType.findUnique({ where: { id } });
     if (!existing) throw new Error('El tipo de dispositivo no existe');
 
+    const associatedDevicesCount = await prisma.device.count({
+      where: { deviceTypeId: id },
+    });
+
+    if (associatedDevicesCount > 0) {
+      throw new Error(
+        `No se puede eliminar el tipo de dispositivo "${existing.name}" porque está asociado a ${associatedDevicesCount} dispositivo(s) en el inventario. Reasigna o elimina primero los dispositivos asociados.`
+      );
+    }
+
     return prisma.deviceType.delete({
       where: { id },
     });
