@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { X, HardDrive, Lock, Plus, Trash2 } from 'lucide-react';
-import { Client, Subsystem, System, Device, CreateDeviceFormData, DeviceCredentialItem, DeviceType, DeviceStatus } from '../types';
+import { X, HardDrive, Lock, Plus, Trash2, Network } from 'lucide-react';
+import { Client, Subsystem, System, Device, CreateDeviceFormData, DeviceCredentialItem, DeviceCommunicationPort, DeviceType, DeviceStatus } from '../types';
 import { api } from '../services/api';
 
 interface DeviceModalProps {
@@ -38,6 +38,7 @@ export const DeviceModal: React.FC<DeviceModalProps> = ({
     ipAddress: '',
     macAddress: '',
     credentials: [{ title: '', username: '', password: '' }],
+    communicationPorts: [{ port: '', service: '' }],
     rackCabinet: '',
     switchName: '',
     switchPort: '',
@@ -71,6 +72,9 @@ export const DeviceModal: React.FC<DeviceModalProps> = ({
         ipAddress: deviceToEdit.ipAddress || '',
         macAddress: deviceToEdit.macAddress || '',
         credentials: [{ title: '', username: '', password: '' }],
+        communicationPorts: deviceToEdit.communicationPorts && deviceToEdit.communicationPorts.length > 0
+          ? deviceToEdit.communicationPorts
+          : [{ port: '', service: '' }],
         rackCabinet: deviceToEdit.rackCabinet || '',
         switchName: deviceToEdit.switchName || '',
         switchPort: deviceToEdit.switchPort || '',
@@ -104,6 +108,7 @@ export const DeviceModal: React.FC<DeviceModalProps> = ({
         ipAddress: '',
         macAddress: '',
         credentials: [{ title: '', username: '', password: '' }],
+        communicationPorts: [{ port: '', service: '' }],
         rackCabinet: '',
         switchName: '',
         switchPort: '',
@@ -129,7 +134,7 @@ export const DeviceModal: React.FC<DeviceModalProps> = ({
   const handleRemoveCredentialRow = (index: number) => {
     setFormData((prev) => ({
       ...prev,
-      credentials: prev.credentials?.filter((_, i) => i !== index),
+      credentials: (prev.credentials || []).filter((_, idx) => idx !== index),
     }));
   };
 
@@ -138,6 +143,32 @@ export const DeviceModal: React.FC<DeviceModalProps> = ({
       const updated = [...(prev.credentials || [])];
       updated[index] = { ...updated[index], [field]: value };
       return { ...prev, credentials: updated };
+    });
+  };
+
+  // Communication Port Handlers
+  const handleAddPortRow = () => {
+    setFormData((prev) => ({
+      ...prev,
+      communicationPorts: [
+        ...(prev.communicationPorts || []),
+        { port: '', service: '' },
+      ],
+    }));
+  };
+
+  const handleRemovePortRow = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      communicationPorts: (prev.communicationPorts || []).filter((_, idx) => idx !== index),
+    }));
+  };
+
+  const handlePortChange = (index: number, field: keyof DeviceCommunicationPort, value: string) => {
+    setFormData((prev) => {
+      const updated = [...(prev.communicationPorts || [])];
+      updated[index] = { ...updated[index], [field]: value };
+      return { ...prev, communicationPorts: updated };
     });
   };
 
@@ -469,6 +500,66 @@ export const DeviceModal: React.FC<DeviceModalProps> = ({
                 ) : (
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
                     No hay credenciales añadidas. Haz clic en "Añadir credencial".
+                  </div>
+                )}
+              </div>
+
+              {/* Puertos de Comunicación */}
+              <div className="form-group full-width" style={{ background: 'var(--bg-primary)', padding: '1rem', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <Network size={16} color="var(--accent-cyan)" />
+                    <label className="form-label" style={{ color: 'var(--accent-cyan)', margin: 0 }}>
+                      Puertos de Comunicaci&oacute;n (HTTP, RTSP, SDK, SSH, etc.)
+                    </label>
+                  </div>
+                  <button
+                    type="button"
+                    className="btn btn-secondary"
+                    style={{ padding: '0.25rem 0.6rem', fontSize: '0.75rem' }}
+                    onClick={handleAddPortRow}
+                  >
+                    <Plus size={14} /> Añadir puerto
+                  </button>
+                </div>
+
+                {formData.communicationPorts && formData.communicationPorts.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {formData.communicationPorts.map((pItem, idx) => (
+                      <div key={idx} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                        <input
+                          type="text"
+                          className="form-input code-font"
+                          placeholder="Puerto (ej: 80, 554, 8000)"
+                          style={{ width: '160px', fontSize: '0.8rem', padding: '0.35rem 0.6rem' }}
+                          value={pItem.port}
+                          onChange={(e) => handlePortChange(idx, 'port', e.target.value)}
+                        />
+                        <input
+                          type="text"
+                          className="form-input"
+                          placeholder="Servicio / Protocolo (ej: HTTP, RTSP, SDK, SSH)"
+                          style={{ flex: 1, fontSize: '0.8rem', padding: '0.35rem 0.6rem' }}
+                          value={pItem.service || ''}
+                          onChange={(e) => handlePortChange(idx, 'service', e.target.value)}
+                        />
+                        {formData.communicationPorts!.length > 1 && (
+                          <button
+                            type="button"
+                            className="btn btn-danger btn-icon"
+                            style={{ padding: '0.35rem' }}
+                            title="Eliminar este puerto"
+                            onClick={() => handleRemovePortRow(idx)}
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                    No hay puertos de comunicación añadidos. Haz clic en "Añadir puerto".
                   </div>
                 )}
               </div>

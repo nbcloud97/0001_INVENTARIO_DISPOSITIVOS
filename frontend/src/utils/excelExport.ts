@@ -24,6 +24,10 @@ export async function exportSystemDevicesToExcel(
         }
       }
 
+      const portsSummary = Array.isArray(device.communicationPorts) && device.communicationPorts.length > 0
+        ? device.communicationPorts.map((p) => p.service ? `${p.port} (${p.service})` : `${p.port}`).join(', ')
+        : '';
+
       return {
         'CLIENTE': device.client?.name || clientName || '',
         'SISTEMA': device.system?.name || systemName || '',
@@ -34,6 +38,7 @@ export async function exportSystemDevicesToExcel(
         'MODELO': device.model || '',
         'NÚMERO DE SERIE': device.serialNumber || '',
         'DIRECCIÓN IP': device.ipAddress || '',
+        'PUERTOS DE COMUNICACIÓN': portsSummary,
         'DIRECCIÓN MAC': device.macAddress || '',
         'RACK': device.rackCabinet || '',
         'REFERENCIA SWITCH': device.switchName || '',
@@ -58,6 +63,7 @@ export async function exportSystemDevicesToExcel(
     { wch: 18 }, // MODELO
     { wch: 20 }, // NÚMERO DE SERIE
     { wch: 18 }, // DIRECCIÓN IP
+    { wch: 25 }, // PUERTOS DE COMUNICACIÓN
     { wch: 20 }, // DIRECCIÓN MAC
     { wch: 20 }, // RACK
     { wch: 22 }, // REFERENCIA SWITCH
@@ -93,6 +99,7 @@ export function downloadImportTemplate() {
       'MODELO': 'DS-2CD2143G0-I',
       'NÚMERO DE SERIE': 'HKV-2026-987651',
       'DIRECCIÓN IP': '192.168.1.101',
+      'PUERTOS DE COMUNICACIÓN': '80 (HTTP), 554 (RTSP), 8000 (SDK)',
       'DIRECCIÓN MAC': '00:11:22:33:44:55',
       'RACK': 'RACK R1 - PLANTA 0',
       'REFERENCIA SWITCH': 'SW-POE-CORE-01',
@@ -111,6 +118,7 @@ export function downloadImportTemplate() {
       'MODELO': 'GALAXY FLEX 50',
       'NÚMERO DE SERIE': 'HON-INT-2026-02',
       'DIRECCIÓN IP': '192.168.1.102',
+      'PUERTOS DE COMUNICACIÓN': '443 (HTTPS), 10001',
       'DIRECCIÓN MAC': '00:11:22:33:44:56',
       'RACK': 'RACK SECUNDARIO R2',
       'REFERENCIA SWITCH': 'SW-POE-CORE-01',
@@ -132,6 +140,7 @@ export function downloadImportTemplate() {
     { wch: 18 }, // MODELO
     { wch: 20 }, // NÚMERO DE SERIE
     { wch: 18 }, // DIRECCIÓN IP
+    { wch: 25 }, // PUERTOS DE COMUNICACIÓN
     { wch: 20 }, // DIRECCIÓN MAC
     { wch: 22 }, // RACK
     { wch: 22 }, // REFERENCIA SWITCH

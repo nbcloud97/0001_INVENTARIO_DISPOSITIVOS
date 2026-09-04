@@ -9,6 +9,47 @@ export interface DeviceCredentialItem {
   notes?: string;
 }
 
+export interface DeviceCommunicationPortItem {
+  id?: string;
+  port: number | string;
+  service?: string;
+}
+
+export function parseCommunicationPorts(jsonStr?: string | null): DeviceCommunicationPortItem[] {
+  if (!jsonStr) return [];
+  try {
+    const parsed = JSON.parse(jsonStr);
+    if (Array.isArray(parsed)) {
+      return parsed.map((item, index) => ({
+        id: item.id || `port-${index}`,
+        port: item.port,
+        service: item.service || '',
+      }));
+    }
+  } catch {
+    if (typeof jsonStr === 'string' && jsonStr.trim()) {
+      return jsonStr.split(',').map((part, index) => {
+        const match = part.trim().match(/^(\d+)\s*(?:\(([^)]+)\))?$/);
+        if (match) {
+          return { id: `port-${index}`, port: match[1], service: match[2] || '' };
+        }
+        return { id: `port-${index}`, port: part.trim() };
+      });
+    }
+  }
+  return [];
+}
+
+export function stringifyCommunicationPorts(ports?: DeviceCommunicationPortItem[]): string | null {
+  if (!ports || !Array.isArray(ports)) return null;
+  const validPorts = ports.filter(p => p && p.port !== undefined && p.port !== null && String(p.port).trim() !== '');
+  if (validPorts.length === 0) return null;
+  return JSON.stringify(validPorts.map(p => ({
+    port: String(p.port).trim(),
+    service: p.service ? String(p.service).trim() : '',
+  })));
+}
+
 export interface CreateDeviceInput {
   systemId: string;
   clientId?: string;
@@ -22,6 +63,7 @@ export interface CreateDeviceInput {
   ipAddress?: string;
   macAddress?: string;
   credentials?: DeviceCredentialItem[];
+  communicationPorts?: DeviceCommunicationPortItem[];
   rackCabinet?: string;
   switchName?: string;
   switchPort?: string;
@@ -44,6 +86,7 @@ export interface BulkCreateDevicesInput {
   switchName?: string;
   startSwitchPort?: number;
   credentials?: DeviceCredentialItem[];
+  communicationPorts?: DeviceCommunicationPortItem[];
   notes?: string;
 }
 
@@ -64,6 +107,7 @@ export interface ImportDeviceItemInput {
   switchPort?: string;
   notes?: string;
   credentials?: DeviceCredentialItem[];
+  communicationPorts?: DeviceCommunicationPortItem[] | string;
 }
 
 export class DeviceService {
@@ -132,6 +176,7 @@ export class DeviceService {
         statusColor: d.status?.color || null,
         hasCredentials: Boolean(d.credentialsEncrypted),
         credentialsCount: credsCount,
+        communicationPorts: parseCommunicationPorts(d.communicationPorts),
         credentialsEncrypted: undefined,
       };
     });
@@ -168,6 +213,7 @@ export class DeviceService {
       statusColor: device.status?.color || null,
       hasCredentials: Boolean(device.credentialsEncrypted),
       credentialsCount: credsCount,
+      communicationPorts: parseCommunicationPorts(device.communicationPorts),
       credentialsEncrypted: undefined,
     };
   }
@@ -199,6 +245,8 @@ export class DeviceService {
       }
     }
 
+    const communicationPortsStr = stringifyCommunicationPorts(data.communicationPorts);
+
     const system = await prisma.system.findUnique({ where: { id: data.systemId } });
     if (!system) throw new Error('El sistema especificado no existe');
 
@@ -228,6 +276,7 @@ export class DeviceService {
         ipAddress: data.ipAddress || null,
         macAddress: data.macAddress || null,
         credentialsEncrypted,
+        communicationPorts: communicationPortsStr,
         rackCabinet: data.rackCabinet || null,
         switchName: data.switchName || null,
         switchPort: data.switchPort || null,
@@ -248,6 +297,7 @@ export class DeviceService {
       statusName: (device as any).status?.name || null,
       statusColor: (device as any).status?.color || null,
       hasCredentials: Boolean(device.credentialsEncrypted),
+      communicationPorts: parseCommunicationPorts(device.communicationPorts),
       credentialsEncrypted: undefined,
     };
   }
@@ -446,6 +496,13 @@ export class DeviceService {
         }
       }
 
+      let commPortsStr: string | null = null;
+      if (typeof item.communicationPorts === 'string') {
+        commPortsStr = stringifyCommunicationPorts(parseCommunicationPorts(item.communicationPorts));
+      } else if (Array.isArray(item.communicationPorts)) {
+        commPortsStr = stringifyCommunicationPorts(item.communicationPorts);
+      }
+
       devicesToCreate.push({
         systemId,
         clientId: system.clientId,
@@ -459,6 +516,7 @@ export class DeviceService {
         ipAddress: item.ipAddress || null,
         macAddress: item.macAddress || null,
         credentialsEncrypted,
+        communicationPorts: commPortsStr,
         rackCabinet: item.rackCabinet || null,
         switchName: item.switchName || null,
         switchPort: item.switchPort || null,
@@ -488,6 +546,11 @@ export class DeviceService {
       }
     }
 
+    let communicationPortsStr: string | undefined | null = undefined;
+    if (data.communicationPorts !== undefined) {
+      communicationPortsStr = stringifyCommunicationPorts(data.communicationPorts);
+    }
+
     const updateData: any = {
       ...(data.systemId && { systemId: data.systemId }),
       ...(data.clientId && { clientId: data.clientId }),
@@ -508,6 +571,9 @@ export class DeviceService {
 
     if (credentialsEncrypted !== undefined) {
       updateData.credentialsEncrypted = credentialsEncrypted;
+    }
+    if (communicationPortsStr !== undefined) {
+      updateData.communicationPorts = communicationPortsStr;
     }
 
     const device = await prisma.device.update({
@@ -539,6 +605,7 @@ export class DeviceService {
       statusColor: device.status?.color || null,
       hasCredentials: Boolean(device.credentialsEncrypted),
       credentialsCount: credsCount,
+      communicationPorts: parseCommunicationPorts(device.communicationPorts),
       credentialsEncrypted: undefined,
     };
   }

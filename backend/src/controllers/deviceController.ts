@@ -11,7 +11,13 @@ const credentialItemSchema = z.object({
   notes: z.string().optional(),
 });
 
-// Zod validation: Permite array de múltiples credenciales por dispositivo
+const portItemSchema = z.object({
+  id: z.string().optional(),
+  port: z.union([z.number(), z.string()]),
+  service: z.string().optional(),
+});
+
+// Zod validation: Permite array de múltiples credenciales y puertos por dispositivo
 const createDeviceSchema = z.object({
   systemId: z.string().min(1, 'El sistema es obligatorio'),
   clientId: z.string().optional(),
@@ -24,6 +30,7 @@ const createDeviceSchema = z.object({
   ipAddress: z.string().optional(),
   macAddress: z.string().optional(),
   credentials: z.array(credentialItemSchema).optional(),
+  communicationPorts: z.array(portItemSchema).optional(),
   rackCabinet: z.string().optional(),
   switchName: z.string().optional(),
   switchPort: z.string().optional(),
@@ -45,6 +52,7 @@ const bulkCreateDeviceSchema = z.object({
   switchName: z.string().optional(),
   startSwitchPort: z.number().int().optional(),
   credentials: z.array(credentialItemSchema).optional(),
+  communicationPorts: z.array(portItemSchema).optional(),
   notes: z.string().optional(),
 });
 
@@ -66,7 +74,7 @@ const importDevicesSchema = z.object({
       switchName: z.string().optional(),
       switchPort: z.string().optional(),
       notes: z.string().optional(),
-      credentials: z.array(credentialItemSchema).optional(),
+      communicationPorts: z.union([z.array(portItemSchema), z.string()]).optional(),
     })
   ).min(1, 'Debes enviar al menos un dispositivo para importar'),
 });

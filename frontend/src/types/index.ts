@@ -80,6 +80,12 @@ export interface DeviceCredentialItem {
   notes?: string;
 }
 
+export interface DeviceCommunicationPort {
+  id?: string;
+  port: number | string;
+  service?: string;
+}
+
 export interface DeviceStatus {
   id: string;
   name: string;
@@ -122,6 +128,7 @@ export interface Device {
   macAddress?: string;
   hasCredentials?: boolean;
   credentialsCount?: number;
+  communicationPorts?: DeviceCommunicationPort[];
   rackCabinet?: string;
   switchName?: string;
   switchPort?: string;
@@ -143,6 +150,7 @@ export interface CreateDeviceFormData {
   ipAddress?: string;
   macAddress?: string;
   credentials?: DeviceCredentialItem[];
+  communicationPorts?: DeviceCommunicationPort[];
   rackCabinet?: string;
   switchName?: string;
   switchPort?: string;

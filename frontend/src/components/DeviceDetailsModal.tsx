@@ -282,6 +282,39 @@ export const DeviceDetailsModal: React.FC<DeviceDetailsModalProps> = ({
                   <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>No registrada</span>
                 )}
               </div>
+
+              {/* Puertos de Comunicación */}
+              <div style={{ background: 'var(--bg-primary)', padding: '0.6rem 0.85rem', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', display: 'block', marginBottom: '0.2rem' }}>
+                  Puertos de Comunicaci&oacute;n
+                </span>
+                {device.communicationPorts && device.communicationPorts.length > 0 ? (
+                  <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap', marginTop: '0.25rem' }}>
+                    {device.communicationPorts.map((p, idx) => (
+                      <span
+                        key={idx}
+                        className="code-font"
+                        style={{
+                          fontSize: '0.75rem',
+                          background: 'var(--bg-card)',
+                          border: '1px solid var(--border-color)',
+                          padding: '0.15rem 0.45rem',
+                          borderRadius: '4px',
+                          color: 'var(--accent-cyan)',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.3rem',
+                        }}
+                      >
+                        <strong>{p.port}</strong>
+                        {p.service && <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>({p.service})</span>}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Sin puertos especificados</span>
+                )}
+              </div>
             </div>
 
             {/* TARJETA 2: Ubicación Física y Switch */}

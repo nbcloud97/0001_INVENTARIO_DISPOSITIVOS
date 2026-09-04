@@ -140,6 +140,7 @@ model Device {
   ipAddress            String?
   macAddress           String?
   credentialsEncrypted String?       // Formato JSON cifrado AES-256-GCM
+  communicationPorts   String?       // Formato JSON [{ port: 80, service: 'HTTP' }]
   rackCabinet          String?
   switchName           String?
   switchPort           String?

@@ -72,6 +72,12 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
             credentials = [{ title, username, password }];
           }
 
+          const portsStr = getItemValue(['PUERTOS DE COMUNICACIÓN', 'PUERTOS COMUNICACION', 'PUERTOS', 'PORTS']);
+          let communicationPorts = undefined;
+          if (portsStr) {
+            communicationPorts = portsStr;
+          }
+
           return {
             assignedName: getItemValue(['NOMBRE ASIGNADO', 'NOMBRE', 'DISPOSITIVO', 'EQUIPO']),
             subsystemName: getItemValue(['SUBSISTEMA', 'SUB-SISTEMA']),
@@ -86,6 +92,7 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
             switchName: getItemValue(['REFERENCIA SWITCH', 'SWITCH']),
             switchPort: getItemValue(['SWITCH PUERTO', 'PUERTO EN SWITCH', 'PUERTO']),
             credentials,
+            communicationPorts,
             notes: getItemValue(['NOTAS', 'OBSERVACIONES']),
           };
         });
