@@ -340,7 +340,7 @@ export const App: React.FC = () => {
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
                         <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 600 }}>
-                          {activeClient?.name} &gt;
+                          {activeClient?.name} {activeClient?.manualId ? `(${activeClient.manualId})` : ''} &gt;
                         </span>
                         <Cpu color="var(--accent-blue)" size={22} />
                         <h2 style={{ fontSize: '1.2rem' }}>{activeSystem.name}</h2>
@@ -546,7 +546,14 @@ export const App: React.FC = () => {
                   </button>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
                     <Building2 color="var(--accent-blue)" size={22} />
-                    <h2 style={{ fontSize: '1.25rem' }}>{activeClient.name}</h2>
+                    <h2 style={{ fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      <span>{activeClient.name}</span>
+                      {activeClient.manualId && (
+                        <span className="code-font" style={{ fontSize: '0.9rem', color: 'var(--accent-purple)', fontWeight: 600 }}>
+                          ({activeClient.manualId})
+                        </span>
+                      )}
+                    </h2>
                   </div>
                 </div>
 
