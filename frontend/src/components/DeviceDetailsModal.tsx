@@ -131,7 +131,7 @@ export const DeviceDetailsModal: React.FC<DeviceDetailsModalProps> = ({
                 )}
               </div>
               <div style={{ fontSize: '0.825rem', color: 'rgba(255, 255, 255, 0.75)', marginTop: '0.15rem' }}>
-                {device.brand || 'GENÉRICO'} • {device.model || 'ESTÁNDAR'}
+                {device.deviceTypeName ? `${device.deviceTypeName} • ` : ''}{device.brand || 'GENÉRICO'} • {device.model || 'ESTÁNDAR'}
               </div>
             </div>
           </div>
@@ -202,6 +202,16 @@ export const DeviceDetailsModal: React.FC<DeviceDetailsModalProps> = ({
               <span style={{ color: 'var(--text-muted)' }}>Subsistema:</span>
               <strong style={{ color: subsystemColor }}>{device.subsystem?.name || '-'}</strong>
             </div>
+
+            {device.deviceTypeName && (
+              <>
+                <div style={{ color: 'var(--border-color)' }}>|</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem' }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Tipo:</span>
+                  <strong style={{ color: 'var(--accent-emerald)' }}>{device.deviceTypeName}</strong>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Tarjetas Visuales de Datos Técnicos */}

@@ -139,6 +139,11 @@ export const DeviceTable: React.FC<DeviceTableProps> = ({
                         >
                           {device.assignedName}
                         </div>
+                        {device.deviceTypeName && (
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.15rem', fontWeight: 500 }}>
+                            🏷️ {device.deviceTypeName}
+                          </div>
+                        )}
                       </button>
                     </td>
 

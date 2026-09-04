@@ -94,6 +94,12 @@ export interface Device {
   };
   subsystemId: string;
   subsystem?: Subsystem;
+  deviceTypeId?: string;
+  deviceTypeName?: string;
+  deviceType?: {
+    id: string;
+    name: string;
+  };
   brand?: string;
   model?: string;
   serialNumber?: string;
@@ -114,6 +120,7 @@ export interface CreateDeviceFormData {
   systemId: string;
   clientId?: string;
   subsystemId?: string;
+  deviceTypeId?: string;
   brand?: string;
   model?: string;
   serialNumber?: string;

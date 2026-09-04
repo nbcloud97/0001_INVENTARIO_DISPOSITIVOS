@@ -13,6 +13,7 @@ export interface CreateDeviceInput {
   systemId: string;
   clientId?: string;
   subsystemId: string;
+  deviceTypeId?: string;
   brand?: string;
   model?: string;
   serialNumber?: string;
@@ -30,6 +31,7 @@ export interface BulkCreateDevicesInput {
   systemId: string;
   clientId?: string;
   subsystemId: string;
+  deviceTypeId?: string;
   brand?: string;
   model?: string;
   baseName?: string;
@@ -46,6 +48,8 @@ export interface BulkCreateDevicesInput {
 export interface ImportDeviceItemInput {
   subsystemName?: string;
   subsystemId?: string;
+  deviceTypeName?: string;
+  deviceTypeId?: string;
   assignedName?: string;
   brand?: string;
   model?: string;
@@ -64,6 +68,7 @@ export class DeviceService {
     systemId?: string;
     clientId?: string;
     subsystemId?: string;
+    deviceTypeId?: string;
     search?: string;
     rackCabinet?: string;
   }) {
@@ -72,6 +77,7 @@ export class DeviceService {
     if (filters?.systemId) where.systemId = filters.systemId;
     if (filters?.clientId) where.clientId = filters.clientId;
     if (filters?.subsystemId) where.subsystemId = filters.subsystemId;
+    if (filters?.deviceTypeId) where.deviceTypeId = filters.deviceTypeId;
     if (filters?.rackCabinet) where.rackCabinet = filters.rackCabinet;
 
     if (filters?.search) {
@@ -85,6 +91,7 @@ export class DeviceService {
         { macAddress: { contains: term } },
         { rackCabinet: { contains: term } },
         { switchName: { contains: term } },
+        { deviceType: { name: { contains: term } } },
       ];
     }
 
@@ -94,6 +101,7 @@ export class DeviceService {
         system: { select: { id: true, name: true, code: true } },
         client: { select: { id: true, name: true } },
         subsystem: { select: { id: true, name: true, color: true, icon: true } },
+        deviceType: { select: { id: true, name: true } },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -115,6 +123,7 @@ export class DeviceService {
 
       return {
         ...d,
+        deviceTypeName: d.deviceType?.name || null,
         hasCredentials: Boolean(d.credentialsEncrypted),
         credentialsCount: credsCount,
         credentialsEncrypted: undefined,
@@ -129,6 +138,7 @@ export class DeviceService {
         system: true,
         client: true,
         subsystem: true,
+        deviceType: true,
       },
     });
 
@@ -146,6 +156,7 @@ export class DeviceService {
 
     return {
       ...device,
+      deviceTypeName: device.deviceType?.name || null,
       hasCredentials: Boolean(device.credentialsEncrypted),
       credentialsCount: credsCount,
       credentialsEncrypted: undefined,
@@ -192,6 +203,7 @@ export class DeviceService {
         systemId: data.systemId,
         clientId,
         subsystemId,
+        deviceTypeId: data.deviceTypeId || null,
         brand: data.brand || null,
         model: data.model || null,
         serialNumber: data.serialNumber || null,
@@ -208,11 +220,13 @@ export class DeviceService {
         system: true,
         client: true,
         subsystem: true,
+        deviceType: true,
       },
     });
 
     return {
       ...device,
+      deviceTypeName: device.deviceType?.name || null,
       hasCredentials: Boolean(device.credentialsEncrypted),
       credentialsEncrypted: undefined,
     };
@@ -383,6 +397,7 @@ export class DeviceService {
       ...(data.systemId && { systemId: data.systemId }),
       ...(data.clientId && { clientId: data.clientId }),
       ...(data.subsystemId && { subsystemId: data.subsystemId }),
+      ...(data.deviceTypeId !== undefined && { deviceTypeId: data.deviceTypeId || null }),
       ...(data.brand !== undefined && { brand: data.brand }),
       ...(data.model !== undefined && { model: data.model }),
       ...(data.serialNumber !== undefined && { serialNumber: data.serialNumber }),
@@ -406,11 +421,13 @@ export class DeviceService {
         system: true,
         client: true,
         subsystem: true,
+        deviceType: true,
       },
     });
 
     return {
       ...device,
+      deviceTypeName: device.deviceType?.name || null,
       hasCredentials: Boolean(device.credentialsEncrypted),
       credentialsEncrypted: undefined,
     };

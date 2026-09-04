@@ -16,6 +16,7 @@ const createDeviceSchema = z.object({
   systemId: z.string().min(1, 'El sistema es obligatorio'),
   clientId: z.string().optional(),
   subsystemId: z.string().min(1, 'El subsistema es obligatorio'),
+  deviceTypeId: z.string().optional().nullable(),
   assignedName: z.string().min(1, 'El nombre asignado al dispositivo es obligatorio'),
   brand: z.string().optional(),
   model: z.string().optional(),
@@ -33,6 +34,7 @@ const bulkCreateDeviceSchema = z.object({
   systemId: z.string().min(1, 'El sistema es obligatorio'),
   clientId: z.string().optional(),
   subsystemId: z.string().min(1, 'El subsistema es obligatorio'),
+  deviceTypeId: z.string().optional().nullable(),
   baseName: z.string().optional(),
   brand: z.string().optional(),
   model: z.string().optional(),
@@ -52,6 +54,8 @@ const importDevicesSchema = z.object({
     z.object({
       subsystemName: z.string().optional(),
       subsystemId: z.string().optional(),
+      deviceTypeName: z.string().optional(),
+      deviceTypeId: z.string().optional(),
       assignedName: z.string().optional(),
       brand: z.string().optional(),
       model: z.string().optional(),
@@ -70,11 +74,12 @@ const importDevicesSchema = z.object({
 export class DeviceController {
   static async getAll(req: Request, res: Response) {
     try {
-      const { systemId, clientId, subsystemId, search, rackCabinet } = req.query;
+      const { systemId, clientId, subsystemId, deviceTypeId, search, rackCabinet } = req.query;
       const devices = await DeviceService.getAll({
         systemId: systemId as string,
         clientId: clientId as string,
         subsystemId: subsystemId as string,
+        deviceTypeId: deviceTypeId as string,
         search: search as string,
         rackCabinet: rackCabinet as string,
       });

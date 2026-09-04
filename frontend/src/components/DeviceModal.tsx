@@ -59,6 +59,7 @@ export const DeviceModal: React.FC<DeviceModalProps> = ({
         systemId: deviceToEdit.systemId,
         clientId: deviceToEdit.clientId,
         subsystemId: deviceToEdit.subsystemId,
+        deviceTypeId: deviceToEdit.deviceTypeId || '',
         brand: deviceToEdit.brand || '',
         model: deviceToEdit.model || '',
         serialNumber: deviceToEdit.serialNumber || '',
@@ -88,6 +89,7 @@ export const DeviceModal: React.FC<DeviceModalProps> = ({
         systemId: defaultSystemId || (systems[0]?.id || ''),
         clientId: activeSys?.clientId || (clients[0]?.id || ''),
         subsystemId: activeSys?.subsystemId || (subsystems[0]?.id || ''),
+        deviceTypeId: '',
         brand: '',
         model: '',
         serialNumber: '',
@@ -202,13 +204,52 @@ export const DeviceModal: React.FC<DeviceModalProps> = ({
                 <select
                   className="form-select"
                   value={formData.subsystemId}
-                  onChange={(e) => setFormData({ ...formData, subsystemId: e.target.value })}
+                  onChange={(e) => {
+                    const newSubsystemId = e.target.value;
+                    setFormData({
+                      ...formData,
+                      subsystemId: newSubsystemId,
+                      deviceTypeId: '', // Reset tipo de dispositivo al cambiar subsistema
+                    });
+                  }}
                   required
                 >
                   <option value="">-- Seleccionar Subsistema --</option>
                   {subsystems.map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Tipo de Dispositivo (en base al Subsistema seleccionado) */}
+              <div className="form-group">
+                <label className="form-label">Tipo de Dispositivo</label>
+                <select
+                  className="form-select"
+                  value={formData.deviceTypeId || ''}
+                  onChange={(e) => {
+                    const selectedTypeId = e.target.value;
+                    const selectedType = availableTypes.find((t) => t.id === selectedTypeId);
+                    setFormData((prev) => ({
+                      ...prev,
+                      deviceTypeId: selectedTypeId,
+                      assignedName: !prev.assignedName && selectedType ? selectedType.name : prev.assignedName,
+                    }));
+                  }}
+                  disabled={!formData.subsystemId || availableTypes.length === 0}
+                >
+                  <option value="">
+                    {!formData.subsystemId
+                      ? '-- Selecciona primero un Subsistema --'
+                      : availableTypes.length === 0
+                      ? 'Sin tipos definidos para este subsistema'
+                      : '-- Seleccionar Tipo de Dispositivo --'}
+                  </option>
+                  {availableTypes.map((dt) => (
+                    <option key={dt.id} value={dt.id}>
+                      {dt.name}
                     </option>
                   ))}
                 </select>

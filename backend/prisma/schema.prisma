@@ -55,6 +55,8 @@ model DeviceType {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
+  devices     Device[]
+
   @@index([subsystemId])
 }
 
@@ -109,30 +111,33 @@ model SystemAttachment {
 }
 
 model Device {
-  id                   String    @id @default(uuid())
+  id                   String      @id @default(uuid())
   systemId             String
-  system               System    @relation(fields: [systemId], references: [id], onDelete: Cascade)
+  system               System      @relation(fields: [systemId], references: [id], onDelete: Cascade)
   clientId             String
-  client               Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  client               Client      @relation(fields: [clientId], references: [id], onDelete: Cascade)
   subsystemId          String
-  subsystem            Subsystem @relation(fields: [subsystemId], references: [id])
-  brand                String?   // Opcional
-  model                String?   // Opcional
+  subsystem            Subsystem   @relation(fields: [subsystemId], references: [id])
+  deviceTypeId         String?
+  deviceType           DeviceType? @relation(fields: [deviceTypeId], references: [id], onDelete: SetNull)
+  brand                String?     // Opcional
+  model                String?     // Opcional
   serialNumber         String?
-  assignedName         String    // Obligatorio
+  assignedName         String      // Obligatorio
   ipAddress            String?
   macAddress           String?
-  credentialsEncrypted String?   // Formato JSON cifrado AES-256-GCM
+  credentialsEncrypted String?     // Formato JSON cifrado AES-256-GCM
   rackCabinet          String?
   switchName           String?
   switchPort           String?
   notes                String?
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
 
   @@index([systemId])
   @@index([clientId])
   @@index([subsystemId])
+  @@index([deviceTypeId])
   @@index([ipAddress])
   @@index([macAddress])
 }
