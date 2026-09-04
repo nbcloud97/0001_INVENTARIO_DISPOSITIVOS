@@ -339,50 +339,62 @@ export class DeviceService {
     for (let index = 0; index < items.length; index++) {
       const item = items[index];
 
-      // Buscar subsistema coincidente por nombre (o id)
+      // Nombre asignado
+      const assignedName = item.assignedName
+        ? item.assignedName.toUpperCase().trim()
+        : `Fila ${index + 1}`;
+
+      // 1. Validar que el tipo de dispositivo esté definido en la fila
+      const rawTypeName = (item.deviceTypeName || item.deviceTypeId || '').trim();
+      if (!rawTypeName) {
+        throw new Error(`Error en la fila ${index + 1} (${assignedName}): El tipo de dispositivo no está definido.`);
+      }
+
+      // 2. Buscar subsistema coincidente por nombre (o id)
       let resolvedSubsystemId = defaultSubsystem.id;
+      let resolvedSubsystemName = defaultSubsystem.name;
       if (item.subsystemId) {
         const found = allSubsystems.find(s => s.id === item.subsystemId);
-        if (found) resolvedSubsystemId = found.id;
+        if (found) {
+          resolvedSubsystemId = found.id;
+          resolvedSubsystemName = found.name;
+        }
       } else if (item.subsystemName) {
         const nameUpper = item.subsystemName.trim().toUpperCase();
         const found = allSubsystems.find(s => s.name.toUpperCase() === nameUpper);
-        if (found) resolvedSubsystemId = found.id;
+        if (found) {
+          resolvedSubsystemId = found.id;
+          resolvedSubsystemName = found.name;
+        }
       }
 
-      // Buscar tipo de dispositivo
+      // 3. Buscar tipo de dispositivo en la base de datos
       let resolvedDeviceTypeId: string | undefined = undefined;
       if (item.deviceTypeId) {
         const found = allDeviceTypes.find(dt => dt.id === item.deviceTypeId);
         if (found) resolvedDeviceTypeId = found.id;
-      } else if (item.deviceTypeName) {
-        const typeUpper = item.deviceTypeName.trim().toUpperCase();
-        const found = allDeviceTypes.find(dt => dt.subsystemId === resolvedSubsystemId && dt.name.toUpperCase() === typeUpper);
-        if (found) resolvedDeviceTypeId = found.id;
       }
-
-      if (!resolvedDeviceTypeId) {
-        // Elegir el primer tipo existente para este subsistema
-        const foundFirst = allDeviceTypes.find(dt => dt.subsystemId === resolvedSubsystemId);
-        if (foundFirst) {
-          resolvedDeviceTypeId = foundFirst.id;
+      
+      if (!resolvedDeviceTypeId && item.deviceTypeName) {
+        const typeUpper = item.deviceTypeName.trim().toUpperCase();
+        const foundInSubsystem = allDeviceTypes.find(
+          dt => dt.subsystemId === resolvedSubsystemId && dt.name.toUpperCase() === typeUpper
+        );
+        if (foundInSubsystem) {
+          resolvedDeviceTypeId = foundInSubsystem.id;
         } else {
-          // Crear un tipo por defecto para este subsistema si no existe ninguno
-          const createdType = await prisma.deviceType.create({
-            data: {
-              name: item.deviceTypeName ? item.deviceTypeName.trim() : 'EQUIPO ESTÁNDAR',
-              subsystemId: resolvedSubsystemId,
-            },
-          });
-          allDeviceTypes.push(createdType);
-          resolvedDeviceTypeId = createdType.id;
+          const foundGlobal = allDeviceTypes.find(dt => dt.name.toUpperCase() === typeUpper);
+          if (foundGlobal) resolvedDeviceTypeId = foundGlobal.id;
         }
       }
 
-      // Nombre asignado
-      const assignedName = item.assignedName
-        ? item.assignedName.toUpperCase().trim()
-        : `DISPOSITIVO_IMP_${index + 1}`;
+      // 4. Si el tipo no está creado en la base de datos, arrojar error
+      if (!resolvedDeviceTypeId) {
+        throw new Error(
+          `Error en la fila ${index + 1} (${assignedName}): El tipo de dispositivo "${rawTypeName}" no está creado.`
+        );
+      }
+
 
       // Cifrar credenciales si se incluyen
       let credentialsEncrypted: string | undefined = undefined;
