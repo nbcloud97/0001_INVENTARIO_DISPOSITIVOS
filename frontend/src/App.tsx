@@ -340,7 +340,7 @@ export const App: React.FC = () => {
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
                         <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 600 }}>
-                          {activeClient?.name} {activeClient?.manualId ? `(ID: ${activeClient.manualId})` : ''} &gt;
+                          {activeClient?.manualId ? `(ID: ${activeClient.manualId}) ` : ''}{activeClient?.name} &gt;
                         </span>
                         <Cpu color="var(--accent-blue)" size={22} />
                         <h2 style={{ fontSize: '1.2rem' }}>{activeSystem.name}</h2>
@@ -547,7 +547,6 @@ export const App: React.FC = () => {
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flex: 1, flexWrap: 'wrap' }}>
                     <Building2 color="var(--accent-blue)" size={22} />
                     <h2 style={{ fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
-                      <span>{activeClient.name}</span>
                       {activeClient.manualId ? (
                         <span
                           className="code-font"
@@ -568,18 +567,8 @@ export const App: React.FC = () => {
                           (Sin ID Manual)
                         </span>
                       )}
+                      <span>{activeClient.name}</span>
                     </h2>
-                    <button
-                      className="btn btn-secondary btn-icon"
-                      title="Editar datos del cliente (ID Manual, Nombre...)"
-                      style={{ padding: '0.3rem 0.5rem', marginLeft: '0.25rem' }}
-                      onClick={() => {
-                        setClientToEdit(activeClient);
-                        setIsClientModalOpen(true);
-                      }}
-                    >
-                      <Edit2 size={15} />
-                    </button>
                   </div>
                 </div>
 
