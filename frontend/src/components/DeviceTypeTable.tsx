@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Search, Plus, HardDrive, Edit2, Trash2, Shield, Camera, Network, PhoneCall, KeyRound } from 'lucide-react';
 import { Subsystem, DeviceType, Device } from '../types';
 import { AssociatedDevicesModal } from './AssociatedDevicesModal';
+import { CustomSelect, CustomSelectOption } from './CustomSelect';
 
 interface DeviceTypeTableProps {
   deviceTypes: DeviceType[];
@@ -54,11 +55,25 @@ export const DeviceTypeTable: React.FC<DeviceTypeTableProps> = ({
     }
   };
 
+  const subsystemOptions: CustomSelectOption[] = [
+    {
+      value: '',
+      label: 'Todos los subsistemas',
+      icon: <Shield size={14} style={{ color: 'var(--text-muted)' }} />,
+    },
+    ...subsystems.map((sub) => ({
+      value: sub.id,
+      label: sub.name,
+      icon: getSubsystemIcon(sub.icon),
+      color: sub.color,
+    })),
+  ];
+
   return (
     <div>
       {/* Toolbar superior con búsqueda, filtro por subsistema y botón Nuevo */}
-      <div className="toolbar" style={{ flexWrap: 'wrap', gap: '0.75rem' }}>
-        <div style={{ display: 'flex', gap: '0.75rem', flex: 1, minWidth: '280px', flexWrap: 'wrap' }}>
+      <div className="toolbar" style={{ flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: '0.75rem', flex: 1, minWidth: '280px', flexWrap: 'wrap', alignItems: 'center' }}>
           <div className="search-box" style={{ flex: 1, minWidth: '200px' }}>
             <Search size={18} className="search-icon" />
             <input
@@ -67,22 +82,17 @@ export const DeviceTypeTable: React.FC<DeviceTypeTableProps> = ({
               placeholder="Buscar..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              style={{ height: '36px', fontSize: '0.825rem' }}
             />
           </div>
 
-          <select
-            className="form-select"
-            style={{ width: '220px', fontSize: '0.85rem' }}
+          <CustomSelect
+            options={subsystemOptions}
             value={selectedSubsystemId}
-            onChange={(e) => setSelectedSubsystemId(e.target.value)}
-          >
-            <option value="">Todos los subsistemas</option>
-            {subsystems.map((sub) => (
-              <option key={sub.id} value={sub.id}>
-                {sub.name}
-              </option>
-            ))}
-          </select>
+            onChange={setSelectedSubsystemId}
+            placeholder="Todos los subsistemas"
+            width="220px"
+          />
         </div>
 
         <button className="btn btn-primary" onClick={onOpenNewDeviceType}>

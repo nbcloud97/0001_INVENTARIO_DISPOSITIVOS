@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Search, Edit2, Trash2, Shield, Camera, Network, PhoneCall, KeyRound, HardDrive, Info } from 'lucide-react';
 import { Device, Subsystem, DeviceStatus } from '../types';
+import { CustomSelect, CustomSelectOption } from './CustomSelect';
 
 interface DeviceTableProps {
   devices: Device[];
@@ -46,6 +47,35 @@ export const DeviceTable: React.FC<DeviceTableProps> = ({
     }
   };
 
+  const subsystemOptions: CustomSelectOption[] = [
+    {
+      value: '',
+      label: `Todos los subsistemas (${devices.length})`,
+      icon: <Shield size={14} style={{ color: 'var(--text-muted)' }} />,
+    },
+    ...subsystems.map((sub) => {
+      const count = devices.filter((d) => d.subsystemId === sub.id).length;
+      return {
+        value: sub.id,
+        label: `${sub.name} (${count})`,
+        icon: getSubsystemIcon(sub.icon),
+        color: sub.color,
+      };
+    }),
+  ];
+
+  const statusOptions: CustomSelectOption[] = [
+    {
+      value: '',
+      label: 'Todos los estados',
+    },
+    ...deviceStatuses.map((st) => ({
+      value: st.id,
+      label: st.name,
+      color: st.color || '#64748b',
+    })),
+  ];
+
   return (
     <div>
       {/* Search Toolbar, Status Filter & Subsystem Filters */}
@@ -64,38 +94,23 @@ export const DeviceTable: React.FC<DeviceTableProps> = ({
         </div>
 
         {/* Filter by Device Subsystem */}
-        <select
-          className="form-select"
-          style={{ width: '210px', height: '36px', fontSize: '0.8rem', padding: '0 2.2rem 0 0.75rem' }}
+        <CustomSelect
+          options={subsystemOptions}
           value={selectedSubsystemId}
-          onChange={(e) => setSelectedSubsystemId(e.target.value)}
-        >
-          <option value="">Todos los subsistemas ({devices.length})</option>
-          {subsystems.map((sub) => {
-            const count = devices.filter((d) => d.subsystemId === sub.id).length;
-            return (
-              <option key={sub.id} value={sub.id}>
-                {sub.name} ({count})
-              </option>
-            );
-          })}
-        </select>
+          onChange={setSelectedSubsystemId}
+          placeholder="Todos los subsistemas"
+          width="220px"
+        />
 
         {/* Filter by Device Status */}
         {deviceStatuses.length > 0 && (
-          <select
-            className="form-select"
-            style={{ width: '175px', height: '36px', fontSize: '0.8rem', padding: '0 2.2rem 0 0.75rem' }}
+          <CustomSelect
+            options={statusOptions}
             value={selectedStatusId}
-            onChange={(e) => setSelectedStatusId(e.target.value)}
-          >
-            <option value="">Todos los estados</option>
-            {deviceStatuses.map((st) => (
-              <option key={st.id} value={st.id}>
-                {st.name}
-              </option>
-            ))}
-          </select>
+            onChange={setSelectedStatusId}
+            placeholder="Todos los estados"
+            width="180px"
+          />
         )}
       </div>
 
