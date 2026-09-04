@@ -257,27 +257,6 @@ export const DeviceTable: React.FC<DeviceTableProps> = ({
                       ) : (
                         <span style={{ color: 'var(--text-muted)' }}>-</span>
                       )}
-                      {device.communicationPorts && device.communicationPorts.length > 0 && (
-                        <div style={{ display: 'flex', gap: '0.2rem', flexWrap: 'wrap', marginTop: '0.25rem' }}>
-                          {device.communicationPorts.map((p, pIdx) => (
-                            <span
-                              key={pIdx}
-                              className="code-font"
-                              style={{
-                                fontSize: '0.7rem',
-                                background: 'var(--bg-primary)',
-                                border: '1px solid var(--border-color)',
-                                padding: '0.05rem 0.35rem',
-                                borderRadius: '3px',
-                                color: 'var(--text-muted)',
-                              }}
-                              title={p.service ? `Puerto ${p.port} (${p.service})` : `Puerto ${p.port}`}
-                            >
-                              :{p.port}
-                            </span>
-                          ))}
-                        </div>
-                      )}
                     </td>
 
                     {/* MAC */}
