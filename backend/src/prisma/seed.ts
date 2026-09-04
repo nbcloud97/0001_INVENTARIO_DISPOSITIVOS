@@ -25,13 +25,13 @@ async function main() {
     subsystemsMap.set(sub.name, created.id);
   }
 
-  // 2. Crear Cliente de Prueba 1 con los campos requeridos (Nombre comercial, Nombre fiscal, NIF, ID Beta10, notas)
+  // 2. Crear Cliente de Prueba 1 con los campos requeridos (Nombre comercial, Nombre fiscal, NIF, ID Manual, notas)
   const client1 = await prisma.client.create({
     data: {
       name: 'Hospital La Paz',                              // Nombre Comercial (Obligatorio)
       legalName: 'Hospital Universitario de la Paz, S.A.', // Nombre Fiscal
       cif: 'A12345678',                                     // NIF
-      beta10Id: '345',                                      // ID Beta10
+      manualId: '345',                                      // ID Manual
       notes: 'Instalación de seguridad iniciada en Q3 2026. Armario Rack en Planta -1.',
     },
   });
@@ -42,7 +42,7 @@ async function main() {
       name: 'Centro Comercial Gran Plaza',
       legalName: 'Gran Plaza Retail Inversiones S.L.U.',
       cif: 'B98765432',
-      beta10Id: '682',
+      manualId: '682',
       notes: 'Revisión trimestral de switches PoE.',
     },
   });

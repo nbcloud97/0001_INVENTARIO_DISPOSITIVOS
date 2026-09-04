@@ -26,7 +26,7 @@ export const ClientTable: React.FC<ClientTableProps> = ({
       c.name.toLowerCase().includes(s) ||
       (c.legalName && c.legalName.toLowerCase().includes(s)) ||
       (c.cif && c.cif.toLowerCase().includes(s)) ||
-      (c.beta10Id && c.beta10Id.toLowerCase().includes(s)) ||
+      (c.manualId && c.manualId.toLowerCase().includes(s)) ||
       (c.notes && c.notes.toLowerCase().includes(s))
     );
   });
@@ -40,7 +40,7 @@ export const ClientTable: React.FC<ClientTableProps> = ({
           <input
             type="text"
             className="input-search"
-            placeholder="Buscar cliente por Nombre Comercial, Nombre Fiscal, NIF o ID Beta10..."
+            placeholder="Buscar cliente por Nombre Comercial, Nombre Fiscal, NIF o ID Manual..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -69,7 +69,7 @@ export const ClientTable: React.FC<ClientTableProps> = ({
                   <th>Nombre Comercial</th>
                   <th>Nombre Fiscal</th>
                   <th>NIF</th>
-                  <th>ID Beta10</th>
+                  <th>ID Manual</th>
                   <th>Notas</th>
                   <th>Sistemas</th>
                   <th style={{ textAlign: 'right' }}>Acciones</th>
@@ -123,10 +123,10 @@ export const ClientTable: React.FC<ClientTableProps> = ({
                       )}
                     </td>
 
-                    {/* ID Beta10 */}
+                    {/* ID Manual */}
                     <td>
-                      {client.beta10Id ? (
-                        <span className="code-font" style={{ color: 'var(--accent-purple)' }}>{client.beta10Id}</span>
+                      {client.manualId ? (
+                        <span className="code-font" style={{ color: 'var(--accent-purple)' }}>{client.manualId}</span>
                       ) : (
                         <span style={{ color: 'var(--text-muted)' }}>-</span>
                       )}

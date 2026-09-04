@@ -23,7 +23,7 @@ model Client {
   name      String   // Nombre Comercial (Obligatorio)
   legalName String?  // Nombre Fiscal
   cif       String?  // NIF
-  beta10Id  String?  // ID Beta10
+  manualId  String?  // ID Manual
   notes     String?  // Notas
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

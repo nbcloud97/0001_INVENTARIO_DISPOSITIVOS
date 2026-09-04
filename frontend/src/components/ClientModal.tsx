@@ -20,7 +20,7 @@ export const ClientModal: React.FC<ClientModalProps> = ({
     name: '',
     legalName: '',
     cif: '',
-    beta10Id: '',
+    manualId: '',
     notes: '',
   });
 
@@ -33,7 +33,7 @@ export const ClientModal: React.FC<ClientModalProps> = ({
         name: clientToEdit.name,
         legalName: clientToEdit.legalName || '',
         cif: clientToEdit.cif || '',
-        beta10Id: clientToEdit.beta10Id || '',
+        manualId: clientToEdit.manualId || '',
         notes: clientToEdit.notes || '',
       });
     } else {
@@ -41,7 +41,7 @@ export const ClientModal: React.FC<ClientModalProps> = ({
         name: '',
         legalName: '',
         cif: '',
-        beta10Id: '',
+        manualId: '',
         notes: '',
       });
     }
@@ -60,8 +60,8 @@ export const ClientModal: React.FC<ClientModalProps> = ({
       name: formData.name ? formData.name.toUpperCase().trim() : '',
       legalName: formData.legalName ? formData.legalName.toUpperCase().trim() : '',
       cif: formData.cif ? formData.cif.toUpperCase().trim() : '',
-      beta10Id: formData.beta10Id ? formData.beta10Id.toUpperCase().trim() : '',
-      notes: formData.notes ? formData.notes.toUpperCase().trim() : '',
+      manualId: formData.manualId ? formData.manualId.toUpperCase().trim() : '',
+      notes: formData.notes ? formData.notes.trim() : '',
     };
 
     try {
@@ -106,7 +106,6 @@ export const ClientModal: React.FC<ClientModalProps> = ({
               <input
                 type="text"
                 className="form-input"
-                placeholder="Ej: HOSPITAL LA PAZ"
                 value={formData.name || ''}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 required
@@ -119,7 +118,6 @@ export const ClientModal: React.FC<ClientModalProps> = ({
               <input
                 type="text"
                 className="form-input"
-                placeholder="Ej: HOSPITAL UNIVERSITARIO DE LA PAZ, S.A."
                 value={formData.legalName || ''}
                 onChange={(e) => setFormData({ ...formData, legalName: e.target.value })}
               />
@@ -132,21 +130,19 @@ export const ClientModal: React.FC<ClientModalProps> = ({
                 <input
                   type="text"
                   className="form-input code-font"
-                  placeholder="Ej: A12345678"
                   value={formData.cif || ''}
                   onChange={(e) => setFormData({ ...formData, cif: e.target.value })}
                 />
               </div>
 
-              {/* ID Beta10 */}
+              {/* ID Manual */}
               <div className="form-group">
-                <label className="form-label">ID Beta10</label>
+                <label className="form-label">ID Manual</label>
                 <input
                   type="text"
                   className="form-input code-font"
-                  placeholder="Ej: 345"
-                  value={formData.beta10Id || ''}
-                  onChange={(e) => setFormData({ ...formData, beta10Id: e.target.value })}
+                  value={formData.manualId || ''}
+                  onChange={(e) => setFormData({ ...formData, manualId: e.target.value })}
                 />
               </div>
             </div>
@@ -157,7 +153,6 @@ export const ClientModal: React.FC<ClientModalProps> = ({
               <textarea
                 className="form-textarea"
                 rows={3}
-                placeholder="Observaciones del cliente o contrato..."
                 value={formData.notes || ''}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               />

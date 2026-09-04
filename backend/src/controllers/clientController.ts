@@ -7,7 +7,7 @@ const clientSchema = z.object({
   name: z.string().min(1, 'El nombre comercial del cliente es obligatorio'),
   legalName: z.string().optional(),
   cif: z.string().optional(),
-  beta10Id: z.string().optional(),
+  manualId: z.string().optional(),
   notes: z.string().optional(),
 });
 

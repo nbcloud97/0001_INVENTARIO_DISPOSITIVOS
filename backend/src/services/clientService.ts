@@ -4,7 +4,7 @@ export interface CreateClientInput {
   name: string;      // Nombre Comercial (Obligatorio)
   legalName?: string; // Nombre Fiscal
   cif?: string;       // NIF
-  beta10Id?: string;  // ID Beta10
+  manualId?: string;  // ID Manual
   notes?: string;     // Notas
 }
 
