@@ -49,24 +49,25 @@ export const DeviceTable: React.FC<DeviceTableProps> = ({
   return (
     <div>
       {/* Search Toolbar, Status Filter & Subsystem Filters */}
-      <div className="toolbar">
+      <div className="toolbar" style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', flexWrap: 'wrap' }}>
         {/* Search Box */}
-        <div className="search-box">
-          <Search size={18} className="search-icon" />
+        <div className="search-box" style={{ flex: '1 1 200px', minWidth: '180px' }}>
+          <Search size={16} className="search-icon" />
           <input
             type="text"
             className="input-search"
             placeholder="Buscar..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            style={{ height: '36px', fontSize: '0.8rem' }}
           />
         </div>
 
         {/* Filter by Device Status */}
         {deviceStatuses.length > 0 && (
           <select
-            className="input-select"
-            style={{ width: '170px', fontSize: '0.8rem', padding: '0.35rem 0.65rem' }}
+            className="form-select"
+            style={{ width: '175px', height: '36px', fontSize: '0.8rem', padding: '0 2.2rem 0 0.75rem' }}
             value={selectedStatusId}
             onChange={(e) => setSelectedStatusId(e.target.value)}
           >
@@ -80,10 +81,10 @@ export const DeviceTable: React.FC<DeviceTableProps> = ({
         )}
 
         {/* Subsystem Filter Pills */}
-        <div style={{ display: 'flex', gap: '0.35rem', overflowX: 'auto', paddingBottom: '0.2rem' }}>
+        <div style={{ display: 'flex', gap: '0.35rem', overflowX: 'auto', alignItems: 'center', paddingBottom: '0.2rem' }}>
           <button
             className={`btn ${selectedSubsystemId === '' ? 'btn-primary' : 'btn-secondary'}`}
-            style={{ padding: '0.35rem 0.75rem', fontSize: '0.8rem' }}
+            style={{ padding: '0 0.75rem', fontSize: '0.8rem', height: '36px' }}
             onClick={() => setSelectedSubsystemId('')}
           >
             Todos ({devices.length})
@@ -96,8 +97,9 @@ export const DeviceTable: React.FC<DeviceTableProps> = ({
                 key={sub.id}
                 className={`btn ${isSelected ? 'btn-primary' : 'btn-secondary'}`}
                 style={{
-                  padding: '0.35rem 0.75rem',
+                  padding: '0 0.75rem',
                   fontSize: '0.8rem',
+                  height: '36px',
                   borderColor: sub.color,
                   color: isSelected ? '#fff' : sub.color,
                   background: isSelected ? sub.color : `${sub.color}15`,
