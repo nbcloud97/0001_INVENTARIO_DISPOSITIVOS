@@ -37,10 +37,12 @@ export const SystemNotesView: React.FC<SystemNotesViewProps> = ({ systemId }) =>
   const handleDelete = async (id: string) => {
     if (!window.confirm('¿Deseas eliminar esta nota permanentemente?')) return;
     try {
+      setNotes((prev) => prev.filter((n) => n.id !== id));
       await api.deleteSystemNote(id);
-      loadNotes();
+      await loadNotes();
     } catch (err: any) {
       alert(`Error al eliminar nota: ${err.message}`);
+      await loadNotes();
     }
   };
 
@@ -145,9 +147,11 @@ export const SystemNotesView: React.FC<SystemNotesViewProps> = ({ systemId }) =>
                     <td style={{ textAlign: 'right' }}>
                       <div style={{ display: 'inline-flex', gap: '0.35rem' }}>
                         <button
+                          type="button"
                           className="btn btn-secondary btn-icon"
                           title="Editar Nota"
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             setNoteToEdit(note);
                             setIsModalOpen(true);
                           }}
@@ -155,9 +159,13 @@ export const SystemNotesView: React.FC<SystemNotesViewProps> = ({ systemId }) =>
                           <Edit2 size={15} />
                         </button>
                         <button
+                          type="button"
                           className="btn btn-danger btn-icon"
                           title="Eliminar Nota"
-                          onClick={() => handleDelete(note.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(note.id);
+                          }}
                         >
                           <Trash2 size={15} />
                         </button>
