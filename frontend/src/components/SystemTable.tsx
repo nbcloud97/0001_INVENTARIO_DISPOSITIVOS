@@ -137,32 +137,26 @@ export const SystemTable: React.FC<SystemTableProps> = ({
 
                     {/* Dispositivos */}
                     <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <span
-                          style={{
-                            padding: '0.2rem 0.55rem',
-                            borderRadius: '9999px',
-                            fontSize: '0.75rem',
-                            fontWeight: 700,
-                            background: 'rgba(2, 132, 199, 0.15)',
-                            color: 'var(--accent-cyan)',
-                            border: '1px solid rgba(2, 132, 199, 0.3)',
-                          }}
-                        >
-                          {system._count?.devices || 0} dispositivos
-                        </span>
-                        <button
-                          className="btn btn-secondary"
-                          style={{ padding: '0.25rem 0.5rem', fontSize: '0.75rem' }}
-                          title="Ver dispositivos de este sistema"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onSelectSystemDevices(system.id);
-                          }}
-                        >
-                          <HardDrive size={12} /> Ver
-                        </button>
-                      </div>
+                      <span
+                        style={{
+                          padding: '0.2rem 0.6rem',
+                          borderRadius: '9999px',
+                          fontSize: '0.75rem',
+                          fontWeight: 700,
+                          background: 'rgba(2, 132, 199, 0.15)',
+                          color: 'var(--accent-cyan)',
+                          border: '1px solid rgba(2, 132, 199, 0.3)',
+                          cursor: 'pointer',
+                          display: 'inline-block',
+                        }}
+                        title="Haz clic para ver los dispositivos de este sistema"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSelectSystemDevices(system.id);
+                        }}
+                      >
+                        {system._count?.devices || 0} dispositivos
+                      </span>
                     </td>
 
                     {/* Acciones */}
