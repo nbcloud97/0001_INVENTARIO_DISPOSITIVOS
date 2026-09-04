@@ -94,7 +94,7 @@ export interface Device {
   };
   subsystemId: string;
   subsystem?: Subsystem;
-  deviceTypeId?: string;
+  deviceTypeId: string;
   deviceTypeName?: string;
   deviceType?: {
     id: string;
@@ -120,7 +120,7 @@ export interface CreateDeviceFormData {
   systemId: string;
   clientId?: string;
   subsystemId?: string;
-  deviceTypeId?: string;
+  deviceTypeId: string;
   brand?: string;
   model?: string;
   serialNumber?: string;
@@ -138,6 +138,7 @@ export interface BulkDeviceFormData {
   systemId: string;
   clientId?: string;
   subsystemId?: string;
+  deviceTypeId: string;
   brand?: string;
   model?: string;
   baseName?: string;

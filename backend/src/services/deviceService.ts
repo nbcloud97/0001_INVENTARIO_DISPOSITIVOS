@@ -197,13 +197,14 @@ export class DeviceService {
     const subsystemId = data.subsystemId || system.subsystemId || undefined;
 
     if (!subsystemId) throw new Error('Debes indicar un subsistema para el dispositivo');
+    if (!data.deviceTypeId) throw new Error('El tipo de dispositivo es obligatorio');
 
     const device = await prisma.device.create({
       data: {
         systemId: data.systemId,
         clientId,
         subsystemId,
-        deviceTypeId: data.deviceTypeId || null,
+        deviceTypeId: data.deviceTypeId,
         brand: data.brand || null,
         model: data.model || null,
         serialNumber: data.serialNumber || null,
@@ -236,6 +237,7 @@ export class DeviceService {
     const {
       systemId,
       subsystemId,
+      deviceTypeId,
       brand,
       model,
       baseName,
@@ -248,6 +250,8 @@ export class DeviceService {
       credentials,
       notes,
     } = data;
+
+    if (!deviceTypeId) throw new Error('El tipo de dispositivo es obligatorio para la creación masiva');
 
     const system = await prisma.system.findUnique({ where: { id: systemId } });
     if (!system) throw new Error('El sistema especificado no existe');
@@ -295,6 +299,7 @@ export class DeviceService {
         systemId,
         clientId,
         subsystemId,
+        deviceTypeId,
         brand: brand || null,
         model: model || null,
         serialNumber: undefined,
@@ -327,7 +332,13 @@ export class DeviceService {
     const defaultSubsystem = allSubsystems[0];
     if (!defaultSubsystem) throw new Error('No hay subsistemas registrados en la aplicación');
 
-    const devicesToCreate = items.map((item, index) => {
+    let allDeviceTypes = await prisma.deviceType.findMany();
+
+    const devicesToCreate = [];
+
+    for (let index = 0; index < items.length; index++) {
+      const item = items[index];
+
       // Buscar subsistema coincidente por nombre (o id)
       let resolvedSubsystemId = defaultSubsystem.id;
       if (item.subsystemId) {
@@ -337,6 +348,35 @@ export class DeviceService {
         const nameUpper = item.subsystemName.trim().toUpperCase();
         const found = allSubsystems.find(s => s.name.toUpperCase() === nameUpper);
         if (found) resolvedSubsystemId = found.id;
+      }
+
+      // Buscar tipo de dispositivo
+      let resolvedDeviceTypeId: string | undefined = undefined;
+      if (item.deviceTypeId) {
+        const found = allDeviceTypes.find(dt => dt.id === item.deviceTypeId);
+        if (found) resolvedDeviceTypeId = found.id;
+      } else if (item.deviceTypeName) {
+        const typeUpper = item.deviceTypeName.trim().toUpperCase();
+        const found = allDeviceTypes.find(dt => dt.subsystemId === resolvedSubsystemId && dt.name.toUpperCase() === typeUpper);
+        if (found) resolvedDeviceTypeId = found.id;
+      }
+
+      if (!resolvedDeviceTypeId) {
+        // Elegir el primer tipo existente para este subsistema
+        const foundFirst = allDeviceTypes.find(dt => dt.subsystemId === resolvedSubsystemId);
+        if (foundFirst) {
+          resolvedDeviceTypeId = foundFirst.id;
+        } else {
+          // Crear un tipo por defecto para este subsistema si no existe ninguno
+          const createdType = await prisma.deviceType.create({
+            data: {
+              name: item.deviceTypeName ? item.deviceTypeName.trim() : 'EQUIPO ESTÁNDAR',
+              subsystemId: resolvedSubsystemId,
+            },
+          });
+          allDeviceTypes.push(createdType);
+          resolvedDeviceTypeId = createdType.id;
+        }
       }
 
       // Nombre asignado
@@ -353,10 +393,11 @@ export class DeviceService {
         }
       }
 
-      return {
+      devicesToCreate.push({
         systemId,
         clientId: system.clientId,
         subsystemId: resolvedSubsystemId,
+        deviceTypeId: resolvedDeviceTypeId,
         assignedName,
         brand: item.brand || null,
         model: item.model || null,
@@ -368,8 +409,8 @@ export class DeviceService {
         switchName: item.switchName || null,
         switchPort: item.switchPort || null,
         notes: item.notes || null,
-      };
-    });
+      });
+    }
 
     const result = await prisma.device.createMany({
       data: devicesToCreate,

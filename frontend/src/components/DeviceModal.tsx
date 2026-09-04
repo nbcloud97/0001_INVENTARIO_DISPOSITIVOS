@@ -28,6 +28,7 @@ export const DeviceModal: React.FC<DeviceModalProps> = ({
     systemId: defaultSystemId || (systems[0]?.id || ''),
     clientId: clients[0]?.id || '',
     subsystemId: subsystems[0]?.id || '',
+    deviceTypeId: '',
     brand: '',
     model: '',
     serialNumber: '',
@@ -139,6 +140,12 @@ export const DeviceModal: React.FC<DeviceModalProps> = ({
     setLoading(true);
     setError(null);
 
+    if (!formData.deviceTypeId) {
+      setError('El tipo de dispositivo es obligatorio. Debes seleccionar uno.');
+      setLoading(false);
+      return;
+    }
+
     // MANTENER MAYÚSCULAS/MINÚSCULAS EXACTAS EN USUARIO Y CONTRASEÑA
     const upperFormData: CreateDeviceFormData = {
       ...formData,
@@ -223,9 +230,9 @@ export const DeviceModal: React.FC<DeviceModalProps> = ({
                 </select>
               </div>
 
-              {/* Tipo de Dispositivo (en base al Subsistema seleccionado) */}
+              {/* Tipo de Dispositivo (Obligatorio, en base al Subsistema seleccionado) */}
               <div className="form-group">
-                <label className="form-label">Tipo de Dispositivo</label>
+                <label className="form-label">Tipo de Dispositivo *</label>
                 <select
                   className="form-select"
                   value={formData.deviceTypeId || ''}
@@ -238,6 +245,7 @@ export const DeviceModal: React.FC<DeviceModalProps> = ({
                       assignedName: !prev.assignedName && selectedType ? selectedType.name : prev.assignedName,
                     }));
                   }}
+                  required
                   disabled={!formData.subsystemId || availableTypes.length === 0}
                 >
                   <option value="">
@@ -245,7 +253,7 @@ export const DeviceModal: React.FC<DeviceModalProps> = ({
                       ? '-- Selecciona primero un Subsistema --'
                       : availableTypes.length === 0
                       ? 'Sin tipos definidos para este subsistema'
-                      : '-- Seleccionar Tipo de Dispositivo --'}
+                      : '-- Seleccionar Tipo de Dispositivo * --'}
                   </option>
                   {availableTypes.map((dt) => (
                     <option key={dt.id} value={dt.id}>
@@ -253,6 +261,11 @@ export const DeviceModal: React.FC<DeviceModalProps> = ({
                     </option>
                   ))}
                 </select>
+                {formData.subsystemId && availableTypes.length === 0 && (
+                  <div style={{ fontSize: '0.775rem', color: 'var(--accent-amber)', marginTop: '0.35rem', fontWeight: 500 }}>
+                    ⚠️ No hay tipos de dispositivo para este subsistema. Debes crearlos en <strong>Configuración &gt; Dispositivos</strong>.
+                  </div>
+                )}
               </div>
 
               {/* Nombre Asignado Obligatorio */}

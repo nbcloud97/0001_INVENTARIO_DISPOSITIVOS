@@ -25,6 +25,34 @@ async function main() {
     subsystemsMap.set(sub.name, created.id);
   }
 
+  // 1.5. Crear Tipos de Dispositivo por defecto para cada subsistema
+  const deviceTypesData = [
+    { name: 'Switch PoE', subsystemId: subsystemsMap.get('Red') },
+    { name: 'Router', subsystemId: subsystemsMap.get('Red') },
+    { name: 'Punto de Acceso AP', subsystemId: subsystemsMap.get('Red') },
+
+    { name: 'Cámara de vídeo', subsystemId: subsystemsMap.get('CCTV') },
+    { name: 'Grabadora NVR', subsystemId: subsystemsMap.get('CCTV') },
+    { name: 'Decodificador IP', subsystemId: subsystemsMap.get('CCTV') },
+
+    { name: 'Placa de calle', subsystemId: subsystemsMap.get('Interfonía') },
+    { name: 'Monitor interior', subsystemId: subsystemsMap.get('Interfonía') },
+
+    { name: 'Controladora de accesos', subsystemId: subsystemsMap.get('Control de accesos') },
+    { name: 'Lector biométrico', subsystemId: subsystemsMap.get('Control de accesos') },
+
+    { name: 'Central de alarma', subsystemId: subsystemsMap.get('Intrusión / Alarma') },
+    { name: 'Detector volumétrico', subsystemId: subsystemsMap.get('Intrusión / Alarma') },
+  ];
+
+  const deviceTypesMap = new Map();
+  for (const dt of deviceTypesData) {
+    const created = await prisma.deviceType.create({
+      data: dt,
+    });
+    deviceTypesMap.set(dt.name, created.id);
+  }
+
   // 2. Crear Cliente de Prueba 1 con los campos requeridos (Nombre comercial, Nombre fiscal, NIF, ID Manual, notas)
   const client1 = await prisma.client.create({
     data: {
@@ -74,6 +102,7 @@ async function main() {
       systemId: system1_CCTV.id,
       clientId: client1.id,
       subsystemId: subsystemsMap.get('CCTV'),
+      deviceTypeId: deviceTypesMap.get('Grabadora NVR'),
       brand: 'Hikvision',
       model: 'DS-9664NI-I8',
       serialNumber: 'HKV-NVR-20260901-X',
@@ -96,6 +125,7 @@ async function main() {
       systemId: system1_CCTV.id,
       clientId: client1.id,
       subsystemId: subsystemsMap.get('CCTV'),
+      deviceTypeId: deviceTypesMap.get('Cámara de vídeo'),
       brand: 'Hikvision',
       model: 'DS-2CD2143G0-I',
       serialNumber: `HKV-CAM-2026-${num}`,
@@ -117,6 +147,7 @@ async function main() {
       systemId: system1_Red.id,
       clientId: client1.id,
       subsystemId: subsystemsMap.get('Red'),
+      deviceTypeId: deviceTypesMap.get('Switch PoE'),
       brand: 'Cisco',
       model: 'Catalyst C9200-24P',
       serialNumber: 'FCW2435X001',

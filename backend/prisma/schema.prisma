@@ -118,8 +118,8 @@ model Device {
   client               Client      @relation(fields: [clientId], references: [id], onDelete: Cascade)
   subsystemId          String
   subsystem            Subsystem   @relation(fields: [subsystemId], references: [id])
-  deviceTypeId         String?
-  deviceType           DeviceType? @relation(fields: [deviceTypeId], references: [id], onDelete: SetNull)
+  deviceTypeId         String
+  deviceType           DeviceType  @relation(fields: [deviceTypeId], references: [id], onDelete: Restrict)
   brand                String?     // Opcional
   model                String?     // Opcional
   serialNumber         String?

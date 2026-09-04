@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Layers3, Zap, CheckCircle2 } from 'lucide-react';
-import { Client, Subsystem, System, BulkDeviceFormData } from '../types';
+import { Client, Subsystem, System, BulkDeviceFormData, DeviceType } from '../types';
 import { api } from '../services/api';
 
 interface BulkDeviceModalProps {
@@ -26,14 +26,24 @@ export const BulkDeviceModal: React.FC<BulkDeviceModalProps> = ({
     systemId: defaultSystemId || (systems[0]?.id || ''),
     clientId: clients[0]?.id || '',
     subsystemId: subsystems[0]?.id || '',
+    deviceTypeId: '',
     brand: '',
     model: '',
     count: 10,
   });
 
+  const [availableTypes, setAvailableTypes] = useState<DeviceType[]>([]);
   const [loading, setLoading] = useState(false);
   const [resultMessage, setResultMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (formData.subsystemId) {
+      api.getDeviceTypes(formData.subsystemId).then(setAvailableTypes).catch(console.error);
+    } else {
+      setAvailableTypes([]);
+    }
+  }, [formData.subsystemId]);
 
   useEffect(() => {
     if (isOpen) {
@@ -42,6 +52,7 @@ export const BulkDeviceModal: React.FC<BulkDeviceModalProps> = ({
         systemId: defaultSystemId || (activeSys?.id || ''),
         clientId: activeSys?.clientId || (clients[0]?.id || ''),
         subsystemId: activeSys?.subsystemId || (subsystems[0]?.id || ''),
+        deviceTypeId: '',
         brand: '',
         model: '',
         count: 10,
@@ -67,6 +78,12 @@ export const BulkDeviceModal: React.FC<BulkDeviceModalProps> = ({
       return;
     }
 
+    if (!formData.deviceTypeId) {
+      setError('El tipo de dispositivo es obligatorio para el alta masiva.');
+      setLoading(false);
+      return;
+    }
+
     const activeSys = systems.find(s => s.id === targetSystemId);
 
     // Convertir datos a MAYÚSCULAS antes de enviar
@@ -74,6 +91,7 @@ export const BulkDeviceModal: React.FC<BulkDeviceModalProps> = ({
       systemId: targetSystemId,
       clientId: formData.clientId || activeSys?.clientId,
       subsystemId: formData.subsystemId || activeSys?.subsystemId || subsystems[0]?.id,
+      deviceTypeId: formData.deviceTypeId,
       brand: formData.brand ? formData.brand.toUpperCase().trim() : '',
       model: formData.model ? formData.model.toUpperCase().trim() : '',
       count: formData.count || 10,
@@ -133,7 +151,10 @@ export const BulkDeviceModal: React.FC<BulkDeviceModalProps> = ({
                 <select
                   className="form-select"
                   value={formData.subsystemId}
-                  onChange={(e) => setFormData({ ...formData, subsystemId: e.target.value })}
+                  onChange={(e) => {
+                    const newSubsystemId = e.target.value;
+                    setFormData({ ...formData, subsystemId: newSubsystemId, deviceTypeId: '' });
+                  }}
                   required
                 >
                   <option value="">-- Seleccionar Subsistema --</option>
@@ -143,6 +164,36 @@ export const BulkDeviceModal: React.FC<BulkDeviceModalProps> = ({
                     </option>
                   ))}
                 </select>
+              </div>
+
+              {/* Tipo de Dispositivo Obligatorio */}
+              <div className="form-group">
+                <label className="form-label">Tipo de Dispositivo *</label>
+                <select
+                  className="form-select"
+                  value={formData.deviceTypeId}
+                  onChange={(e) => setFormData({ ...formData, deviceTypeId: e.target.value })}
+                  required
+                  disabled={!formData.subsystemId || availableTypes.length === 0}
+                >
+                  <option value="">
+                    {!formData.subsystemId
+                      ? '-- Selecciona primero un Subsistema --'
+                      : availableTypes.length === 0
+                      ? 'Sin tipos definidos para este subsistema'
+                      : '-- Seleccionar Tipo de Dispositivo * --'}
+                  </option>
+                  {availableTypes.map((dt) => (
+                    <option key={dt.id} value={dt.id}>
+                      {dt.name}
+                    </option>
+                  ))}
+                </select>
+                {formData.subsystemId && availableTypes.length === 0 && (
+                  <div style={{ fontSize: '0.775rem', color: 'var(--accent-amber)', marginTop: '0.35rem', fontWeight: 500 }}>
+                    ⚠️ No hay tipos de dispositivo para este subsistema. Debes crearlos en <strong>Configuración &gt; Dispositivos</strong>.
+                  </div>
+                )}
               </div>
 
               <div className="form-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
