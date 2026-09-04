@@ -19,7 +19,7 @@ import { SystemAttachmentsView } from './components/SystemAttachmentsView';
 import { Client, Subsystem, System, Device } from './types';
 import { api, UserProfile } from './services/api';
 import { exportSystemDevicesToExcel } from './utils/excelExport';
-import { ArrowLeft, Building2, Cpu, Layers3, FileSpreadsheet, ChevronDown, Upload, HardDrive, FileText, Paperclip } from 'lucide-react';
+import { ArrowLeft, Building2, Cpu, Layers3, FileSpreadsheet, ChevronDown, Upload, HardDrive, FileText, Paperclip, Edit2 } from 'lucide-react';
 
 export const App: React.FC = () => {
   // Autenticación State
@@ -340,7 +340,7 @@ export const App: React.FC = () => {
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
                         <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 600 }}>
-                          {activeClient?.name} {activeClient?.manualId ? `(${activeClient.manualId})` : ''} &gt;
+                          {activeClient?.name} {activeClient?.manualId ? `(ID: ${activeClient.manualId})` : ''} &gt;
                         </span>
                         <Cpu color="var(--accent-blue)" size={22} />
                         <h2 style={{ fontSize: '1.2rem' }}>{activeSystem.name}</h2>
@@ -544,16 +544,42 @@ export const App: React.FC = () => {
                   >
                     <ArrowLeft size={18} />
                   </button>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flex: 1, flexWrap: 'wrap' }}>
                     <Building2 color="var(--accent-blue)" size={22} />
-                    <h2 style={{ fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                    <h2 style={{ fontSize: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
                       <span>{activeClient.name}</span>
-                      {activeClient.manualId && (
-                        <span className="code-font" style={{ fontSize: '0.9rem', color: 'var(--accent-purple)', fontWeight: 600 }}>
-                          ({activeClient.manualId})
+                      {activeClient.manualId ? (
+                        <span
+                          className="code-font"
+                          style={{
+                            fontSize: '0.85rem',
+                            color: 'var(--accent-purple)',
+                            fontWeight: 600,
+                            background: 'rgba(168, 85, 247, 0.15)',
+                            padding: '0.2rem 0.6rem',
+                            borderRadius: '4px',
+                            border: '1px solid rgba(168, 85, 247, 0.3)',
+                          }}
+                        >
+                          ID: {activeClient.manualId}
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                          (Sin ID Manual)
                         </span>
                       )}
                     </h2>
+                    <button
+                      className="btn btn-secondary btn-icon"
+                      title="Editar datos del cliente (ID Manual, Nombre...)"
+                      style={{ padding: '0.3rem 0.5rem', marginLeft: '0.25rem' }}
+                      onClick={() => {
+                        setClientToEdit(activeClient);
+                        setIsClientModalOpen(true);
+                      }}
+                    >
+                      <Edit2 size={15} />
+                    </button>
                   </div>
                 </div>
 
