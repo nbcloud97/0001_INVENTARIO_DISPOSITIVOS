@@ -153,14 +153,13 @@ export const DeviceTypeTable: React.FC<DeviceTypeTableProps> = ({
                       {/* Equipos Asociados */}
                       <td>
                         <span
-                          className="badge"
                           style={{
-                            background: associatedCount > 0 ? 'rgba(2, 132, 199, 0.15)' : 'var(--bg-primary)',
-                            color: associatedCount > 0 ? 'var(--accent-blue)' : 'var(--text-muted)',
                             fontWeight: 700,
-                            fontSize: '0.75rem',
-                            border: '1px solid var(--border-color)',
+                            fontSize: '0.9rem',
+                            color: associatedCount > 0 ? 'var(--accent-blue)' : 'var(--text-muted)',
                             cursor: associatedCount > 0 ? 'pointer' : 'default',
+                            textDecoration: associatedCount > 0 ? 'underline' : 'none',
+                            textUnderlineOffset: '3px',
                           }}
                           title={associatedCount > 0 ? 'Haz clic para consultar cliente, sistema y equipos' : undefined}
                           onClick={() => {
