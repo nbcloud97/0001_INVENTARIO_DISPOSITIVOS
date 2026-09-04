@@ -1,4 +1,4 @@
-// Schema Prisma - Modelo System & User con autenticación
+// Schema Prisma - Modelo System, SystemNote & User con autenticación
 generator client {
   provider = "prisma-client-js"
 }
@@ -58,10 +58,24 @@ model System {
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
-  devices Device[]
+  devices     Device[]
+  systemNotes SystemNote[]
 
   @@index([clientId])
   @@index([subsystemId])
+}
+
+model SystemNote {
+  id        String   @id @default(uuid())
+  systemId  String
+  system    System   @relation(fields: [systemId], references: [id], onDelete: Cascade)
+  title     String?  // Título o Etiqueta de la Nota
+  content   String   // Contenido de la nota (Obligatorio)
+  createdBy String?  // Usuario que la registró
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([systemId])
 }
 
 model Device {

@@ -4,6 +4,7 @@ import { SubsystemController } from '../controllers/subsystemController';
 import { SystemController } from '../controllers/systemController';
 import { DeviceController } from '../controllers/deviceController';
 import { AuthController } from '../controllers/authController';
+import { SystemNoteController } from '../controllers/systemNoteController';
 
 export const apiRouter = Router();
 
@@ -25,12 +26,18 @@ apiRouter.post('/subsystems', SubsystemController.create);
 apiRouter.put('/subsystems/:id', SubsystemController.update);
 apiRouter.delete('/subsystems/:id', SubsystemController.delete);
 
-// Rutas de Sistemas (Jerarquía Cliente -> Sistema -> Dispositivos)
+// Rutas de Sistemas (Jerarquía Cliente -> Sistema -> Dispositivos & Notas)
 apiRouter.get('/systems', SystemController.getAll);
 apiRouter.get('/systems/:id', SystemController.getById);
 apiRouter.post('/systems', SystemController.create);
 apiRouter.put('/systems/:id', SystemController.update);
 apiRouter.delete('/systems/:id', SystemController.delete);
+
+// Rutas de Notas de Sistema
+apiRouter.get('/systems/:systemId/notes', SystemNoteController.getBySystemId);
+apiRouter.post('/systems/notes', SystemNoteController.create);
+apiRouter.put('/systems/notes/:id', SystemNoteController.update);
+apiRouter.delete('/systems/notes/:id', SystemNoteController.delete);
 
 // Rutas de Dispositivos
 apiRouter.get('/devices', DeviceController.getAll);

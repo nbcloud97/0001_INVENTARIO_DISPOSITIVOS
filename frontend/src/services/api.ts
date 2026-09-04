@@ -1,4 +1,4 @@
-import { Client, Subsystem, System, Device, CreateDeviceFormData, BulkDeviceFormData, DeviceCredentialItem } from '../types';
+import { Client, Subsystem, System, Device, CreateDeviceFormData, BulkDeviceFormData, DeviceCredentialItem, SystemNote } from '../types';
 
 const API_BASE = '/api/v1';
 
@@ -77,6 +77,14 @@ export const api = {
   createSystem: (data: Partial<System>) => fetchJson<System>('/systems', { method: 'POST', body: JSON.stringify(data) }),
   updateSystem: (id: string, data: Partial<System>) => fetchJson<System>(`/systems/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteSystem: (id: string) => fetchJson<{ message: string }>(`/systems/${id}`, { method: 'DELETE' }),
+
+  // Notas de Sistema
+  getSystemNotes: (systemId: string) => fetchJson<SystemNote[]>(`/systems/${systemId}/notes`),
+  createSystemNote: (data: { systemId: string; title?: string; content: string }) =>
+    fetchJson<SystemNote>('/systems/notes', { method: 'POST', body: JSON.stringify(data) }),
+  updateSystemNote: (id: string, data: { title?: string; content?: string }) =>
+    fetchJson<SystemNote>(`/systems/notes/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteSystemNote: (id: string) => fetchJson<{ message: string }>(`/systems/notes/${id}`, { method: 'DELETE' }),
 
   // Dispositivos
   getDevices: (params?: { systemId?: string; clientId?: string; subsystemId?: string; search?: string; rackCabinet?: string }) => {

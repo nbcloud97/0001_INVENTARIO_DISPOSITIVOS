@@ -13,11 +13,12 @@ import { ImportExcelModal } from './components/ImportExcelModal';
 import { DeviceDetailsModal } from './components/DeviceDetailsModal';
 import { ConfirmModal } from './components/ConfirmModal';
 import { LoginView } from './components/LoginView';
+import { SystemNotesView } from './components/SystemNotesView';
 
 import { Client, Subsystem, System, Device } from './types';
 import { api, UserProfile } from './services/api';
 import { exportSystemDevicesToExcel } from './utils/excelExport';
-import { ArrowLeft, Building2, Cpu, Layers3, FileSpreadsheet, ChevronDown, Upload } from 'lucide-react';
+import { ArrowLeft, Building2, Cpu, Layers3, FileSpreadsheet, ChevronDown, Upload, HardDrive, FileText } from 'lucide-react';
 
 export const App: React.FC = () => {
   // Autenticación State
@@ -48,6 +49,9 @@ export const App: React.FC = () => {
 
   // Navigation: Main tabs ('clients' or 'config')
   const [activeTab, setActiveTab] = useState<'clients' | 'config'>('clients');
+
+  // Sub-tabs dentro de un Sistema ('devices' | 'notes')
+  const [systemTab, setSystemTab] = useState<'devices' | 'notes'>('devices');
 
   // Theme state ('light' | 'dark')
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
@@ -302,7 +306,7 @@ export const App: React.FC = () => {
         {/* ========================================================================= */}
         {activeTab === 'clients' && (
           <div>
-            {/* NIVEL 3: Dispositivos de un Sistema específico */}
+            {/* NIVEL 3: Dispositivos y Notas de un Sistema específico */}
             {selectedClientId && selectedSystemId && activeSystem ? (
               <div>
                 {/* Banner Breadcrumb Nivel 3 */}
@@ -312,7 +316,7 @@ export const App: React.FC = () => {
                     border: '1px solid var(--border-color)',
                     borderRadius: '8px',
                     padding: '0.85rem 1.25rem',
-                    marginBottom: '1.25rem',
+                    marginBottom: '1rem',
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
@@ -325,7 +329,10 @@ export const App: React.FC = () => {
                     <button
                       className="btn btn-secondary btn-icon"
                       title="Volver a la lista de sistemas del cliente"
-                      onClick={() => setSelectedSystemId('')}
+                      onClick={() => {
+                        setSelectedSystemId('');
+                        setSystemTab('devices');
+                      }}
                     >
                       <ArrowLeft size={18} />
                     </button>
@@ -341,129 +348,164 @@ export const App: React.FC = () => {
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                    {/* Desplegable Opciones */}
-                    <div ref={optionsMenuRef} style={{ position: 'relative' }}>
-                      <button
-                        className="btn btn-secondary"
-                        onClick={() => setIsOptionsMenuOpen(!isOptionsMenuOpen)}
-                        title="Opciones adicionales del sistema"
-                      >
-                        Opciones <ChevronDown size={14} style={{ transition: 'transform 0.2s', transform: isOptionsMenuOpen ? 'rotate(180deg)' : 'rotate(0deg)' }} />
-                      </button>
-
-                      {isOptionsMenuOpen && (
-                        <div
-                          style={{
-                            position: 'absolute',
-                            top: '100%',
-                            right: 0,
-                            marginTop: '0.35rem',
-                            background: 'var(--bg-card)',
-                            border: '1px solid var(--border-color)',
-                            borderRadius: '6px',
-                            boxShadow: 'var(--shadow-md)',
-                            zIndex: 50,
-                            minWidth: '170px',
-                            overflow: 'hidden',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            padding: '0.25rem 0',
-                          }}
+                  {systemTab === 'devices' && (
+                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                      {/* Desplegable Opciones */}
+                      <div ref={optionsMenuRef} style={{ position: 'relative' }}>
+                        <button
+                          className="btn btn-secondary"
+                          onClick={() => setIsOptionsMenuOpen(!isOptionsMenuOpen)}
+                          title="Opciones adicionales del sistema"
                         >
-                          {/* Opción 1: Exportar */}
-                          <button
-                            className="btn"
-                            style={{
-                              background: 'transparent',
-                              border: 'none',
-                              color: 'var(--text-primary)',
-                              padding: '0.55rem 1rem',
-                              width: '100%',
-                              justifyContent: 'flex-start',
-                              borderRadius: 0,
-                              fontSize: '0.825rem',
-                            }}
-                            onClick={() => {
-                              setIsOptionsMenuOpen(false);
-                              handleExport();
-                            }}
-                            disabled={exporting}
-                          >
-                            <FileSpreadsheet size={15} color="var(--accent-emerald)" />
-                            {exporting ? 'Exportando...' : 'Exportar'}
-                          </button>
+                          Opciones <ChevronDown size={14} style={{ transition: 'transform 0.2s', transform: isOptionsMenuOpen ? 'rotate(180deg)' : 'rotate(0deg)' }} />
+                        </button>
 
-                          {/* Opción 2: Importación */}
-                          <button
-                            className="btn"
+                        {isOptionsMenuOpen && (
+                          <div
                             style={{
-                              background: 'transparent',
-                              border: 'none',
-                              color: 'var(--text-primary)',
-                              padding: '0.55rem 1rem',
-                              width: '100%',
-                              justifyContent: 'flex-start',
-                              borderRadius: 0,
-                              fontSize: '0.825rem',
-                            }}
-                            onClick={() => {
-                              setIsOptionsMenuOpen(false);
-                              setIsImportModalOpen(true);
+                              position: 'absolute',
+                              top: '100%',
+                              right: 0,
+                              marginTop: '0.35rem',
+                              background: 'var(--bg-card)',
+                              border: '1px solid var(--border-color)',
+                              borderRadius: '6px',
+                              boxShadow: 'var(--shadow-md)',
+                              zIndex: 50,
+                              minWidth: '170px',
+                              overflow: 'hidden',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              padding: '0.25rem 0',
                             }}
                           >
-                            <Upload size={15} color="var(--accent-cyan)" /> Importaci&oacute;n
-                          </button>
+                            {/* Opción 1: Exportar */}
+                            <button
+                              className="btn"
+                              style={{
+                                background: 'transparent',
+                                border: 'none',
+                                color: 'var(--text-primary)',
+                                padding: '0.55rem 1rem',
+                                width: '100%',
+                                justifyContent: 'flex-start',
+                                borderRadius: 0,
+                                fontSize: '0.825rem',
+                              }}
+                              onClick={() => {
+                                setIsOptionsMenuOpen(false);
+                                handleExport();
+                              }}
+                              disabled={exporting}
+                            >
+                              <FileSpreadsheet size={15} color="var(--accent-emerald)" />
+                              {exporting ? 'Exportando...' : 'Exportar'}
+                            </button>
 
-                          {/* Opción 3: Alta masiva */}
-                          <button
-                            className="btn"
-                            style={{
-                              background: 'transparent',
-                              border: 'none',
-                              color: 'var(--text-primary)',
-                              padding: '0.55rem 1rem',
-                              width: '100%',
-                              justifyContent: 'flex-start',
-                              borderRadius: 0,
-                              fontSize: '0.825rem',
-                            }}
-                            onClick={() => {
-                              setIsOptionsMenuOpen(false);
-                              setIsBulkModalOpen(true);
-                            }}
-                          >
-                            <Layers3 size={15} color="var(--accent-purple)" /> Alta masiva
-                          </button>
-                        </div>
-                      )}
+                            {/* Opción 2: Importación */}
+                            <button
+                              className="btn"
+                              style={{
+                                background: 'transparent',
+                                border: 'none',
+                                color: 'var(--text-primary)',
+                                padding: '0.55rem 1rem',
+                                width: '100%',
+                                justifyContent: 'flex-start',
+                                borderRadius: 0,
+                                fontSize: '0.825rem',
+                              }}
+                              onClick={() => {
+                                setIsOptionsMenuOpen(false);
+                                setIsImportModalOpen(true);
+                              }}
+                            >
+                              <Upload size={15} color="var(--accent-cyan)" /> Importaci&oacute;n
+                            </button>
+
+                            {/* Opción 3: Alta masiva */}
+                            <button
+                              className="btn"
+                              style={{
+                                background: 'transparent',
+                                border: 'none',
+                                color: 'var(--text-primary)',
+                                padding: '0.55rem 1rem',
+                                width: '100%',
+                                justifyContent: 'flex-start',
+                                borderRadius: 0,
+                                fontSize: '0.825rem',
+                              }}
+                              onClick={() => {
+                                setIsOptionsMenuOpen(false);
+                                setIsBulkModalOpen(true);
+                              }}
+                            >
+                              <Layers3 size={15} color="var(--accent-purple)" /> Alta masiva
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Botón Nuevo Dispositivo */}
+                      <button
+                        className="btn btn-primary"
+                        onClick={() => {
+                          setDeviceToEdit(null);
+                          setIsDeviceModalOpen(true);
+                        }}
+                      >
+                        Nuevo
+                      </button>
                     </div>
-
-                    {/* Botón Nuevo */}
-                    <button
-                      className="btn btn-primary"
-                      onClick={() => {
-                        setDeviceToEdit(null);
-                        setIsDeviceModalOpen(true);
-                      }}
-                    >
-                      Nuevo
-                    </button>
-                  </div>
+                  )}
                 </div>
 
-                {/* Tabla de Dispositivos del Sistema */}
-                <DeviceTable
-                  devices={devices}
-                  subsystems={subsystems}
-                  selectedSubsystemId={selectedSubsystemFilterId}
-                  setSelectedSubsystemId={setSelectedSubsystemFilterId}
-                  searchTerm={searchTerm}
-                  setSearchTerm={setSearchTerm}
-                  onEditDevice={handleEditDevice}
-                  onDeleteDevice={requestDeleteDevice}
-                  onSelectDeviceDetails={(dev) => setSelectedDetailsDevice(dev)}
-                />
+                {/* Sub-Pestañas / Solapas del Sistema (Dispositivos | Notas) */}
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: '0.5rem',
+                    marginBottom: '1.25rem',
+                    borderBottom: '1px solid var(--border-color)',
+                    paddingBottom: '0.5rem',
+                  }}
+                >
+                  <button
+                    className={`btn ${systemTab === 'devices' ? 'btn-primary' : 'btn-secondary'}`}
+                    style={{ fontSize: '0.85rem', padding: '0.4rem 0.9rem' }}
+                    onClick={() => setSystemTab('devices')}
+                  >
+                    <HardDrive size={15} /> Dispositivos
+                  </button>
+                  <button
+                    className={`btn ${systemTab === 'notes' ? 'btn-primary' : 'btn-secondary'}`}
+                    style={{ fontSize: '0.85rem', padding: '0.4rem 0.9rem' }}
+                    onClick={() => setSystemTab('notes')}
+                  >
+                    <FileText size={15} /> Notas
+                  </button>
+                </div>
+
+                {/* Contenido según la Solapa Seleccionada */}
+                {systemTab === 'devices' ? (
+                  <DeviceTable
+                    devices={devices}
+                    subsystems={subsystems}
+                    selectedSubsystemId={selectedSubsystemFilterId}
+                    setSelectedSubsystemId={setSelectedSubsystemFilterId}
+                    searchTerm={searchTerm}
+                    setSearchTerm={setSearchTerm}
+                    onEditDevice={handleEditDevice}
+                    onDeleteDevice={requestDeleteDevice}
+                    onSelectDeviceDetails={(dev) => setSelectedDetailsDevice(dev)}
+                  />
+                ) : (
+                  <SystemNotesView
+                    systemId={selectedSystemId}
+                    systemName={activeSystem.name}
+                  />
+                )}
               </div>
             ) : selectedClientId && activeClient ? (
               /* NIVEL 2: Sistemas del Cliente seleccionado */
@@ -505,6 +547,7 @@ export const App: React.FC = () => {
                   onDeleteSystem={requestDeleteSystem}
                   onSelectSystemDevices={(sysId) => {
                     setSelectedSystemId(sysId);
+                    setSystemTab('devices');
                     setSelectedSubsystemFilterId('');
                     setSearchTerm('');
                   }}
@@ -528,6 +571,7 @@ export const App: React.FC = () => {
                   onSelectClientSystems={(clientId) => {
                     setSelectedClientId(clientId);
                     setSelectedSystemId('');
+                    setSystemTab('devices');
                     setSelectedSubsystemFilterId('');
                     setSearchTerm('');
                   }}

@@ -26,6 +26,16 @@ export interface Client {
   createdAt?: string;
 }
 
+export interface SystemNote {
+  id: string;
+  systemId: string;
+  title?: string;
+  content: string;
+  createdBy?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
 export interface System {
   id: string;
   name: string;
@@ -41,8 +51,10 @@ export interface System {
   subsystem?: Subsystem;
   _count?: {
     devices: number;
+    systemNotes?: number;
   };
   devices?: Device[];
+  systemNotes?: SystemNote[];
   createdAt?: string;
 }
 
