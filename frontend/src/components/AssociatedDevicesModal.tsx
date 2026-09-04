@@ -1,11 +1,12 @@
 import React from 'react';
-import { X, HardDrive, Building2, Cpu, ExternalLink } from 'lucide-react';
-import { DeviceType, Device } from '../types';
+import { X, HardDrive, Building2, Cpu, ExternalLink, Tag } from 'lucide-react';
+import { DeviceType, DeviceStatus, Device } from '../types';
 
 interface AssociatedDevicesModalProps {
   isOpen: boolean;
   onClose: () => void;
-  deviceType: DeviceType | null;
+  deviceType?: DeviceType | null;
+  deviceStatus?: DeviceStatus | null;
   devices: Device[];
   onSelectDeviceDetails?: (device: Device) => void;
 }
@@ -14,24 +15,47 @@ export const AssociatedDevicesModal: React.FC<AssociatedDevicesModalProps> = ({
   isOpen,
   onClose,
   deviceType,
+  deviceStatus,
   devices,
   onSelectDeviceDetails,
 }) => {
-  if (!isOpen || !deviceType) return null;
+  if (!isOpen || (!deviceType && !deviceStatus)) return null;
 
-  // Filtrar los dispositivos asociados a este tipo
-  const typeDevices = devices.filter((d) => d.deviceTypeId === deviceType.id);
+  // Filtrar los dispositivos asociados a este tipo o estado
+  const filteredDevices = deviceType
+    ? devices.filter((d) => d.deviceTypeId === deviceType.id)
+    : deviceStatus
+    ? devices.filter((d) => d.statusId === deviceStatus.id)
+    : [];
+
+  const title = deviceType
+    ? `Equipos Registrados: ${deviceType.name}`
+    : deviceStatus
+    ? `Equipos en Estado: ${deviceStatus.name}`
+    : '';
+
+  const subtitle = deviceType
+    ? `Subsistema: ${deviceType.subsystem?.name || 'General'} • ${filteredDevices.length} dispositivo(s)`
+    : deviceStatus
+    ? `Estado de Dispositivo • ${filteredDevices.length} dispositivo(s)`
+    : '';
+
+  const icon = deviceType ? (
+    <HardDrive color="var(--accent-blue)" size={24} />
+  ) : (
+    <Tag color={deviceStatus?.color || '#10b981'} size={24} />
+  );
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-card" style={{ maxWidth: '750px' }} onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-            <HardDrive color="var(--accent-blue)" size={24} />
+            {icon}
             <div>
-              <h2>Equipos Registrados: {deviceType.name}</h2>
+              <h2>{title}</h2>
               <p style={{ fontSize: '0.75rem', color: 'rgba(255, 255, 255, 0.8)' }}>
-                Subsistema: {deviceType.subsystem?.name || 'General'} • {typeDevices.length} dispositivo(s)
+                {subtitle}
               </p>
             </div>
           </div>
@@ -41,12 +65,12 @@ export const AssociatedDevicesModal: React.FC<AssociatedDevicesModalProps> = ({
         </div>
 
         <div className="modal-body" style={{ padding: '1.25rem' }}>
-          {typeDevices.length === 0 ? (
+          {filteredDevices.length === 0 ? (
             <div className="empty-state" style={{ padding: '2rem' }}>
               <HardDrive className="empty-icon" />
               <h3>Sin equipos registrados</h3>
               <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-                Actualmente no hay dispositivos inventariados con este tipo.
+                Actualmente no hay dispositivos inventariados asociados.
               </p>
             </div>
           ) : (
@@ -61,7 +85,7 @@ export const AssociatedDevicesModal: React.FC<AssociatedDevicesModalProps> = ({
                   </tr>
                 </thead>
                 <tbody>
-                  {typeDevices.map((dev) => (
+                  {filteredDevices.map((dev) => (
                     <tr key={dev.id}>
                       {/* Cliente */}
                       <td>

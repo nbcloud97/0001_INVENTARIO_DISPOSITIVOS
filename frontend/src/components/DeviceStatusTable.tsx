@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Search, Plus, Tag, Edit2, Trash2 } from 'lucide-react';
 import { DeviceStatus, Device } from '../types';
+import { AssociatedDevicesModal } from './AssociatedDevicesModal';
 
 interface DeviceStatusTableProps {
   statuses: DeviceStatus[];
@@ -8,6 +9,7 @@ interface DeviceStatusTableProps {
   onEditStatus: (status: DeviceStatus) => void;
   onDeleteStatus: (id: string) => void;
   onOpenNewStatus: () => void;
+  onSelectDeviceDetails?: (device: Device) => void;
 }
 
 export const DeviceStatusTable: React.FC<DeviceStatusTableProps> = ({
@@ -16,8 +18,10 @@ export const DeviceStatusTable: React.FC<DeviceStatusTableProps> = ({
   onEditStatus,
   onDeleteStatus,
   onOpenNewStatus,
+  onSelectDeviceDetails,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedStatusForModal, setSelectedStatusForModal] = useState<DeviceStatus | null>(null);
 
   const filteredStatuses = statuses.filter((st) => {
     const term = searchTerm.trim().toLowerCase();
@@ -114,6 +118,15 @@ export const DeviceStatusTable: React.FC<DeviceStatusTableProps> = ({
                             fontWeight: 700,
                             fontSize: '0.9rem',
                             color: countAssigned > 0 ? 'var(--accent-blue)' : 'var(--text-muted)',
+                            cursor: countAssigned > 0 ? 'pointer' : 'default',
+                            textDecoration: countAssigned > 0 ? 'underline' : 'none',
+                            textUnderlineOffset: '3px',
+                          }}
+                          title={countAssigned > 0 ? 'Haz clic para consultar cliente, sistema y equipos' : undefined}
+                          onClick={() => {
+                            if (countAssigned > 0) {
+                              setSelectedStatusForModal(st);
+                            }
                           }}
                         >
                           {countAssigned} {countAssigned === 1 ? 'equipo' : 'equipos'}
@@ -163,6 +176,15 @@ export const DeviceStatusTable: React.FC<DeviceStatusTableProps> = ({
           </div>
         )}
       </div>
+
+      {/* Modal de Equipos Asociados por Estado */}
+      <AssociatedDevicesModal
+        isOpen={!!selectedStatusForModal}
+        onClose={() => setSelectedStatusForModal(null)}
+        deviceStatus={selectedStatusForModal}
+        devices={devices}
+        onSelectDeviceDetails={onSelectDeviceDetails}
+      />
     </div>
   );
 };
