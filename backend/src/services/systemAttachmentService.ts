@@ -60,4 +60,14 @@ export class SystemAttachmentService {
       where: { id },
     });
   }
+
+  static async update(id: string, filename: string) {
+    const attachment = await prisma.systemAttachment.findUnique({ where: { id } });
+    if (!attachment) throw new Error('Adjunto no encontrado');
+
+    return prisma.systemAttachment.update({
+      where: { id },
+      data: { filename },
+    });
+  }
 }

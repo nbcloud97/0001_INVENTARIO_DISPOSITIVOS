@@ -107,4 +107,20 @@ export class SystemAttachmentController {
       return res.status(500).json({ success: false, error: error.message });
     }
   }
+
+  static async update(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const { filename } = req.body;
+
+      if (!filename || !filename.trim()) {
+        return res.status(400).json({ success: false, error: 'El nombre del archivo es obligatorio' });
+      }
+
+      const attachment = await SystemAttachmentService.update(id, filename.trim());
+      return res.json({ success: true, data: attachment });
+    } catch (error: any) {
+      return res.status(500).json({ success: false, error: error.message });
+    }
+  }
 }

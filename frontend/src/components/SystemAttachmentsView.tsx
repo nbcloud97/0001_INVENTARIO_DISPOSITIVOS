@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Upload, Paperclip, FileText, Image as ImageIcon, FileSpreadsheet, Archive, Trash2, Download, Calendar, File, Eye } from 'lucide-react';
+import { Search, Upload, Paperclip, FileText, Image as ImageIcon, FileSpreadsheet, Archive, Trash2, Download, Calendar, File, Eye, Edit2, Check, X } from 'lucide-react';
 import { SystemAttachment } from '../types';
 import { api } from '../services/api';
 import { AttachmentPreviewModal } from './AttachmentPreviewModal';
@@ -16,6 +16,8 @@ export const SystemAttachmentsView: React.FC<SystemAttachmentsViewProps> = ({ sy
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [previewAttachment, setPreviewAttachment] = useState<SystemAttachment | null>(null);
+  const [editingAttachmentId, setEditingAttachmentId] = useState<string | null>(null);
+  const [editingFilename, setEditingFilename] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const loadAttachments = async () => {
@@ -62,6 +64,32 @@ export const SystemAttachmentsView: React.FC<SystemAttachmentsViewProps> = ({ sy
     } catch (err: any) {
       alert(`Error al eliminar archivo: ${err.message}`);
     }
+  };
+
+  const handleStartRename = (file: SystemAttachment) => {
+    setEditingAttachmentId(file.id);
+    setEditingFilename(file.filename);
+  };
+
+  const handleSaveRename = async (id: string) => {
+    const trimmed = editingFilename.trim();
+    if (!trimmed) {
+      alert('El nombre del archivo no puede estar vacío');
+      return;
+    }
+    try {
+      await api.updateSystemAttachment(id, trimmed);
+      setEditingAttachmentId(null);
+      setEditingFilename('');
+      loadAttachments();
+    } catch (err: any) {
+      alert(`Error al renombrar archivo: ${err.message}`);
+    }
+  };
+
+  const handleCancelRename = () => {
+    setEditingAttachmentId(null);
+    setEditingFilename('');
   };
 
   const filteredAttachments = attachments.filter((a) => {
@@ -178,31 +206,60 @@ export const SystemAttachmentsView: React.FC<SystemAttachmentsViewProps> = ({ sy
               <tbody>
                 {filteredAttachments.map((file) => (
                   <tr key={file.id}>
-                    {/* Nombre del archivo con icono según su tipo */}
+                    {/* Nombre del archivo con icono o Input de Renombrar */}
                     <td>
-                      <div
-                        style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', cursor: 'pointer' }}
-                        onClick={() => setPreviewAttachment(file)}
-                        title="Hacer clic para previsualizar archivo"
-                      >
-                        {getFileIcon(file.filename, file.mimeType)}
-                        <div>
-                          <div
-                            style={{
-                              fontWeight: 600,
-                              color: 'var(--text-primary)',
-                              fontSize: '0.9rem',
-                              transition: 'color 0.2s',
-                            }}
-                            className="filename-link"
-                          >
-                            {file.filename}
-                          </div>
-                          <div style={{ fontSize: '0.725rem', color: 'var(--text-muted)' }}>
-                            {file.mimeType}
+                      {editingAttachmentId === file.id ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                          {getFileIcon(editingFilename || file.filename, file.mimeType)}
+                          <div style={{ flex: 1 }}>
+                            <input
+                              type="text"
+                              className="input-text"
+                              value={editingFilename}
+                              onChange={(e) => setEditingFilename(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleSaveRename(file.id);
+                                if (e.key === 'Escape') handleCancelRename();
+                              }}
+                              autoFocus
+                              style={{
+                                fontSize: '0.875rem',
+                                padding: '0.3rem 0.6rem',
+                                width: '100%',
+                                border: '1px solid var(--accent-blue)',
+                                borderRadius: '4px',
+                              }}
+                            />
+                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
+                              Presiona Enter para guardar o Esc para cancelar
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      ) : (
+                        <div
+                          style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', cursor: 'pointer' }}
+                          onClick={() => setPreviewAttachment(file)}
+                          title="Hacer clic para previsualizar archivo"
+                        >
+                          {getFileIcon(file.filename, file.mimeType)}
+                          <div>
+                            <div
+                              style={{
+                                fontWeight: 600,
+                                color: 'var(--text-primary)',
+                                fontSize: '0.9rem',
+                                transition: 'color 0.2s',
+                              }}
+                              className="filename-link"
+                            >
+                              {file.filename}
+                            </div>
+                            <div style={{ fontSize: '0.725rem', color: 'var(--text-muted)' }}>
+                              {file.mimeType}
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </td>
 
                     {/* Tamaño del archivo */}
@@ -220,35 +277,61 @@ export const SystemAttachmentsView: React.FC<SystemAttachmentsViewProps> = ({ sy
                       </div>
                     </td>
 
-                    {/* Acciones: Previsualizar, Descargar & Eliminar */}
+                    {/* Acciones: Previsualizar, Renombrar, Descargar & Eliminar */}
                     <td style={{ textAlign: 'right' }}>
-                      <div style={{ display: 'inline-flex', gap: '0.35rem' }}>
-                        <button
-                          className="btn btn-secondary btn-icon"
-                          title="Previsualizar archivo"
-                          onClick={() => setPreviewAttachment(file)}
-                        >
-                          <Eye size={15} color="var(--accent-purple)" />
-                        </button>
-                        <a
-                          href={api.getAttachmentDownloadUrl(file.id)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="btn btn-secondary btn-icon"
-                          title="Descargar archivo"
-                          download={file.filename}
-                          style={{ textDecoration: 'none' }}
-                        >
-                          <Download size={15} color="var(--accent-blue)" />
-                        </a>
-                        <button
-                          className="btn btn-danger btn-icon"
-                          title="Eliminar archivo adjunto"
-                          onClick={() => handleDelete(file.id, file.filename)}
-                        >
-                          <Trash2 size={15} />
-                        </button>
-                      </div>
+                      {editingAttachmentId === file.id ? (
+                        <div style={{ display: 'inline-flex', gap: '0.35rem' }}>
+                          <button
+                            className="btn btn-primary btn-icon"
+                            title="Guardar nuevo nombre"
+                            onClick={() => handleSaveRename(file.id)}
+                          >
+                            <Check size={15} />
+                          </button>
+                          <button
+                            className="btn btn-secondary btn-icon"
+                            title="Cancelar edición"
+                            onClick={handleCancelRename}
+                          >
+                            <X size={15} />
+                          </button>
+                        </div>
+                      ) : (
+                        <div style={{ display: 'inline-flex', gap: '0.35rem' }}>
+                          <button
+                            className="btn btn-secondary btn-icon"
+                            title="Previsualizar archivo"
+                            onClick={() => setPreviewAttachment(file)}
+                          >
+                            <Eye size={15} color="var(--accent-purple)" />
+                          </button>
+                          <button
+                            className="btn btn-secondary btn-icon"
+                            title="Renombrar archivo"
+                            onClick={() => handleStartRename(file)}
+                          >
+                            <Edit2 size={15} color="var(--accent-amber)" />
+                          </button>
+                          <a
+                            href={api.getAttachmentDownloadUrl(file.id)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn btn-secondary btn-icon"
+                            title="Descargar archivo"
+                            download={file.filename}
+                            style={{ textDecoration: 'none' }}
+                          >
+                            <Download size={15} color="var(--accent-blue)" />
+                          </a>
+                          <button
+                            className="btn btn-danger btn-icon"
+                            title="Eliminar archivo adjunto"
+                            onClick={() => handleDelete(file.id, file.filename)}
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}

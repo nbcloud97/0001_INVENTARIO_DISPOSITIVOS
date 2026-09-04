@@ -143,6 +143,12 @@ export const api = {
     return response.text();
   },
 
+  updateSystemAttachment: (id: string, filename: string) =>
+    fetchJson<SystemAttachment>(`/systems/attachments/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ filename }),
+    }),
+
   deleteSystemAttachment: (id: string) => fetchJson<{ message: string }>(`/systems/attachments/${id}`, { method: 'DELETE' }),
 
   // Dispositivos
