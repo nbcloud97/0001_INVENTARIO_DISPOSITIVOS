@@ -746,6 +746,7 @@ export const App: React.FC = () => {
                     setDeviceTypeToEdit(null);
                     setIsDeviceTypeModalOpen(true);
                   }}
+                  onSelectDeviceDetails={(dev) => setSelectedDetailsDevice(dev)}
                 />
               </div>
             )}

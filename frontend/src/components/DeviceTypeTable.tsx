@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Search, Plus, HardDrive, Edit2, Trash2, Shield, Camera, Network, PhoneCall, KeyRound } from 'lucide-react';
 import { Subsystem, DeviceType, Device } from '../types';
+import { AssociatedDevicesModal } from './AssociatedDevicesModal';
 
 interface DeviceTypeTableProps {
   deviceTypes: DeviceType[];
@@ -9,6 +10,7 @@ interface DeviceTypeTableProps {
   onEditDeviceType: (deviceType: DeviceType) => void;
   onDeleteDeviceType: (id: string) => void;
   onOpenNewDeviceType: () => void;
+  onSelectDeviceDetails?: (device: Device) => void;
 }
 
 export const DeviceTypeTable: React.FC<DeviceTypeTableProps> = ({
@@ -18,9 +20,11 @@ export const DeviceTypeTable: React.FC<DeviceTypeTableProps> = ({
   onEditDeviceType,
   onDeleteDeviceType,
   onOpenNewDeviceType,
+  onSelectDeviceDetails,
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSubsystemId, setSelectedSubsystemId] = useState('');
+  const [selectedTypeForModal, setSelectedTypeForModal] = useState<DeviceType | null>(null);
 
   const filteredDeviceTypes = deviceTypes.filter((dt) => {
     if (selectedSubsystemId && dt.subsystemId !== selectedSubsystemId) {
@@ -156,6 +160,13 @@ export const DeviceTypeTable: React.FC<DeviceTypeTableProps> = ({
                             fontWeight: 700,
                             fontSize: '0.75rem',
                             border: '1px solid var(--border-color)',
+                            cursor: associatedCount > 0 ? 'pointer' : 'default',
+                          }}
+                          title={associatedCount > 0 ? 'Haz clic para consultar cliente, sistema y equipos' : undefined}
+                          onClick={() => {
+                            if (associatedCount > 0) {
+                              setSelectedTypeForModal(dt);
+                            }
                           }}
                         >
                           {associatedCount} {associatedCount === 1 ? 'equipo' : 'equipos'}
@@ -205,6 +216,15 @@ export const DeviceTypeTable: React.FC<DeviceTypeTableProps> = ({
           </div>
         )}
       </div>
+
+      {/* Modal de Equipos Asociados */}
+      <AssociatedDevicesModal
+        isOpen={!!selectedTypeForModal}
+        onClose={() => setSelectedTypeForModal(null)}
+        deviceType={selectedTypeForModal}
+        devices={devices}
+        onSelectDeviceDetails={onSelectDeviceDetails}
+      />
     </div>
   );
 };
