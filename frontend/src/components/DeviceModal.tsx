@@ -89,12 +89,14 @@ export const DeviceModal: React.FC<DeviceModalProps> = ({
       }
     } else {
       const activeSys = systems.find(s => s.id === defaultSystemId) || systems[0];
+      const defaultStatus = deviceStatuses.find(st => st.name.trim().toLowerCase() === 'operativo') || deviceStatuses[0];
+
       setFormData({
         systemId: defaultSystemId || (systems[0]?.id || ''),
         clientId: activeSys?.clientId || (clients[0]?.id || ''),
         subsystemId: activeSys?.subsystemId || (subsystems[0]?.id || ''),
         deviceTypeId: '',
-        statusId: deviceStatuses[0]?.id || '',
+        statusId: defaultStatus?.id || '',
         brand: '',
         model: '',
         serialNumber: '',
@@ -109,7 +111,7 @@ export const DeviceModal: React.FC<DeviceModalProps> = ({
       });
     }
     setError(null);
-  }, [deviceToEdit, isOpen, defaultSystemId, clients, subsystems, systems]);
+  }, [deviceToEdit, isOpen, defaultSystemId, clients, subsystems, systems, deviceStatuses]);
 
   if (!isOpen) return null;
 

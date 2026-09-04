@@ -205,15 +205,21 @@ export class DeviceService {
     const subsystemId = data.subsystemId || system.subsystemId || undefined;
 
     if (!subsystemId) throw new Error('Debes indicar un subsistema para el dispositivo');
-    if (!data.deviceTypeId) throw new Error('El tipo de dispositivo es obligatorio');
+    let statusId = data.statusId || null;
+    if (!statusId) {
+      const defaultStatus = await prisma.deviceStatus.findFirst({
+        where: { name: { equals: 'Operativo' } },
+      });
+      statusId = defaultStatus?.id || null;
+    }
 
     const device = await prisma.device.create({
       data: {
         systemId: data.systemId,
         clientId,
         subsystemId,
-        deviceTypeId: data.deviceTypeId,
-        statusId: data.statusId || null,
+        deviceTypeId: data.deviceTypeId!,
+        statusId,
         brand: data.brand || null,
         model: data.model || null,
         serialNumber: data.serialNumber || null,
@@ -237,9 +243,9 @@ export class DeviceService {
 
     return {
       ...device,
-      deviceTypeName: device.deviceType?.name || null,
-      statusName: device.status?.name || null,
-      statusColor: device.status?.color || null,
+      deviceTypeName: (device as any).deviceType?.name || null,
+      statusName: (device as any).status?.name || null,
+      statusColor: (device as any).status?.color || null,
       hasCredentials: Boolean(device.credentialsEncrypted),
       credentialsEncrypted: undefined,
     };
@@ -290,6 +296,14 @@ export class DeviceService {
       }
     }
 
+    let statusId = data.statusId || null;
+    if (!statusId) {
+      const defaultStatus = await prisma.deviceStatus.findFirst({
+        where: { name: { equals: 'Operativo' } },
+      });
+      statusId = defaultStatus?.id || null;
+    }
+
     const devicesToCreate = [];
 
     for (let i = 0; i < count; i++) {
@@ -312,6 +326,7 @@ export class DeviceService {
         clientId,
         subsystemId,
         deviceTypeId,
+        statusId,
         brand: brand || null,
         model: model || null,
         serialNumber: undefined,
@@ -345,6 +360,11 @@ export class DeviceService {
     if (!defaultSubsystem) throw new Error('No hay subsistemas registrados en la aplicación');
 
     let allDeviceTypes = await prisma.deviceType.findMany();
+
+    const defaultStatus = await prisma.deviceStatus.findFirst({
+      where: { name: { equals: 'Operativo' } },
+    });
+    const defaultStatusId = defaultStatus?.id || null;
 
     const devicesToCreate = [];
 
@@ -422,6 +442,7 @@ export class DeviceService {
         clientId: system.clientId,
         subsystemId: resolvedSubsystemId,
         deviceTypeId: resolvedDeviceTypeId,
+        statusId: defaultStatusId,
         assignedName,
         brand: item.brand || null,
         model: item.model || null,
@@ -492,12 +513,24 @@ export class DeviceService {
       },
     });
 
+    let credsCount = 0;
+    if (device.credentialsEncrypted) {
+      try {
+        const decrypted = decryptCredentials(device.credentialsEncrypted);
+        credsCount = Array.isArray(decrypted) ? decrypted.length : 1;
+      } catch {
+        credsCount = 1;
+      }
+    }
+
     return {
       ...device,
       deviceTypeName: device.deviceType?.name || null,
       statusName: device.status?.name || null,
       statusColor: device.status?.color || null,
       hasCredentials: Boolean(device.credentialsEncrypted),
+      credentialsCount: credsCount,
+      credentialsEncrypted: undefined,
     };
   }
 
