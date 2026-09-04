@@ -1,8 +1,8 @@
 /**
  * Convierte las cadenas de texto del usuario a MAYÚSCULAS antes de guardar en la base de datos.
  * Excluye claves de identificadores de base de datos (id, systemId, clientId, subsystemId),
- * valores de estilo (color, icon) y CREDENCIALES (credentials, username, password, user, pass, extra)
- * para preservar su casing y caracteres exactos introducidos por el usuario.
+ * valores de estilo (color, icon), CREDENCIALES (credentials, username, password, user, pass, extra)
+ * y NOTAS/CONTENIDO (content, notes, title) para preservar su casing y caracteres exactos introducidos por el usuario.
  */
 export function toUpperString(val: string | undefined | null): string | undefined {
   if (typeof val === 'string') {
@@ -24,7 +24,7 @@ export function toUpperObject<T extends Record<string, any>>(obj: T): T {
 
     if (typeof result[key] === 'string') {
       const lowerKey = key.toLowerCase();
-      // Preservar minúsculas/mayúsculas exactas en identificadores, estilos y CREDENCIALES
+      // Preservar minúsculas/mayúsculas exactas en identificadores, estilos, credenciales y NOTAS/CONTENIDOS
       if (
         key === 'id' ||
         key.endsWith('Id') ||
@@ -35,7 +35,10 @@ export function toUpperObject<T extends Record<string, any>>(obj: T): T {
         lowerKey === 'password' ||
         lowerKey === 'user' ||
         lowerKey === 'pass' ||
-        lowerKey === 'extra'
+        lowerKey === 'extra' ||
+        lowerKey === 'content' ||
+        lowerKey === 'notes' ||
+        lowerKey === 'title'
       ) {
         result[key] = result[key].trim();
       } else {
