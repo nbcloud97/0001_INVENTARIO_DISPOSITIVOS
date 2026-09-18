@@ -1,6 +1,6 @@
 # 📦 Inventario de Dispositivos por Cliente
 
-![Versión](https://img.shields.io/badge/versión-2.5.0-blue.svg)
+![Versión](https://img.shields.io/badge/versión-2.7.0-blue.svg)
 ![Licencia](https://img.shields.io/badge/licencia-MIT-green.svg)
 ![React](https://img.shields.io/badge/Frontend-React%2018%20%7C%20Vite%20%7C%20TypeScript-61DAFB?logo=react)
 ![Node.js](https://img.shields.io/badge/Backend-Node.js%2020%20%7C%20Express-339933?logo=node.js)
@@ -8,7 +8,7 @@
 ![Oracle](https://img.shields.io/badge/Integración-Oracle%20ERP%20Beta%2010-F80000?logo=oracle)
 ![Docker](https://img.shields.io/badge/Despliegue-Docker%20Compose%20%7C%20Nginx-2496ED?logo=docker)
 
-Plataforma Web integral para la **gestión, auditoría y control de inventario de dispositivos informáticos y sistemas de seguridad** organizados jerárquicamente por Cliente, Sistema y Subsistema técnico (Red, CCTV, Interfonía, Control de Accesos e Intrusión/Alarma), con integración directa a **Oracle ERP Beta 10**, archivado en cascada, gestión de archivos adjuntos, notas técnicas y copias de seguridad.
+Plataforma Web integral para la **gestión, auditoría y control de inventario de dispositivos informáticos y sistemas de seguridad** organizados jerárquicamente por Cliente, Sistema y Subsistema técnico (Red, CCTV, Interfonía, Control de Accesos e Intrusión/Alarma), con integración directa a **Oracle ERP Beta 10**, archivado en cascada, gestión documental con visor de Excel integrado, exportación corporativa en Excel/PDF, notas técnicas y copias de seguridad.
 
 ---
 
@@ -40,8 +40,8 @@ La solución utiliza una arquitectura desacoplada basada en microservicios conte
 ```
 
 ### 🔹 Componentes Principales:
-* **Frontend SPA (`inventario_frontend`)**: Desarrollado en **React 18**, **TypeScript**, **Vite** y **Tailwind / Lucide Icons**. Incluye interfaz adaptativa con modo oscuro automático, componentes reutilizables (`CustomSelect`), pestañas de filtrado de estado (Activos / Archivados / Todos), visor/descarga de adjuntos, modales de importación y asistentes de lote.
-* **Backend API REST (`inventario_backend`)**: Desarrollado en **Node.js 20** con **Express** y **TypeScript**. Incorpora autenticación mediante **JWT**, control de permisos, cifrado **AES-256-GCM** para credenciales de equipos, subida de archivos multipart con **Multer**, conector **OracleDB** (`oracledb`) para ERP Beta 10, motor de copias de seguridad y documentación interactiva con **Swagger UI**.
+* **Frontend SPA (`inventario_frontend`)**: Desarrollado en **React 18**, **TypeScript**, **Vite** y **Tailwind / Lucide Icons**. Incluye interfaz adaptativa con modo oscuro automático, componentes reutilizables (`CustomSelect`), pestañas de filtrado de estado (Activos / Archivados / Todos), visor de archivos adjuntos (con soporte nativo para previsualización interactiva de **Excel**), exportador dual (**Excel con tablas nativas y PDF corporativo para clientes**), modales de importación y asistentes de lote.
+* **Backend API REST (`inventario_backend`)**: Desarrollado en **Node.js 20** con **Express** y **TypeScript**. Incorpora autenticación mediante **JWT**, control de permisos granulares, cifrado **AES-256-GCM** para credenciales de equipos, subida de archivos multipart con **Multer**, conector **OracleDB** (`oracledb`) para ERP Beta 10, motor de copias de seguridad y documentación interactiva con **Swagger UI**.
 * **Base de Datos (`inventario_postgres`)**: Instancia de **PostgreSQL 15** gestionada mediante **Prisma ORM**. Maneja integridad referencial en cascada, índices optimizados y persistencia volumétrica.
 * **Integración Externa (ERP Beta 10)**: Conector de solo lectura contra bases de datos Oracle para sincronización e importación masiva de Clientes y Sistemas.
 * **Orquestación & Autoarranque**: Configuración en **Docker Compose** con proxy inverso Nginx y scripts de inicio desasistido para Windows Task Scheduler.
@@ -180,19 +180,35 @@ erDiagram
 * Ficha técnica completa por equipo: Marca, Modelo, Nº de Serie, Configuración de Red (Dirección IP, Máscara de Subred, Puerta de Enlace / Gateway), Dirección MAC, Armario/Rack, Switch de conexión y Puerto de red.
 * **Estados y Distintivos**: Colores configurables (*Operativo*, *Falta instalación*, *En mantenimiento*, *Baja*).
 * **Filtros Avanzados**: Desplegables customizados (`CustomSelect`) con búsqueda integrada por Subsistema y Estado.
+* **Eliminación Masiva por Sistema**: Opción para vaciar todos los dispositivos de un sistema con confirmación de seguridad.
 
-### 📝 Notas Técnicas y Archivos Adjuntos por Sistema
-* **Bitácora de Notas**: Registro de observaciones técnicas, cambios de configuración e incidencias por sistema con autoría y fecha.
-* **Gestor Documental**: Carga de planos, esquemas de red, manuales en PDF e imágenes con previsualización directa y descarga.
+### 📑 Exportación Dual: Excel y PDF con Gestión de Credenciales
+* **Selector Unificado de Exportación**: Ventana modal interactiva accesible desde el menú *Opciones* del sistema.
+* **Exportación a Excel (`.xlsx`)**:
+  - Generación de **tablas nativas de Microsoft Excel (`TableStyleMedium9`)** con filtros desplegables automáticos, filas alternas sombreadas (*Zebra Striping*) e inmovilización de paneles (*Freeze Panes*).
+  - Tipografía Segoe UI, anchos automáticos y alineaciones ajustadas por tipo de dato.
+* **Exportación a PDF (`.pdf`)**:
+  - Dossier corporativo maquetado en A4 horizontal (*Landscape*), diseñado especialmente para presentación a clientes.
+  - Cabecera oficial con metadatos del Cliente y Sistema, tablas de equipos agrupadas por subsistema y pie de página confidencial con paginación dinámica (*Página X de Y*).
+* **Control de Privacidad / Credenciales**:
+  - Opción para incluir o excluir contraseñas y accesos.
+  - Si se activa en PDF, incorpora la columna `CREDENCIALES` en formato directo `usuario/contraseña`.
+
+### 📊 Importación Masiva Oficial en Excel (`importacion_dispositivos.xlsx`)
+* **Plantilla Estructurada de 19 Campos**: Descarga directa de la plantilla oficial con los campos estandarizados:
+  `SUBSISTEMA`, `TIPO_DISPOSITIVO`, `ESTADO`, `NOMBRE`, `MARCA`, `MODELO`, `NUMERO_SERIE`, `IP`, `MASCARA`, `PUERTA_ENLACE`, `MAC`, `RACK`, `SWITCH`, `SWITCH_PUERTO`, `USUARIO_DESCRIPCION`, `USUARIO`, `CONTRASEÑA`, `PUERTO`, `PUERTO_NOMBRE`.
+* **Guía de Campos Integrada**: Segunda pestaña con explicaciones de obligatoriedad y ejemplos para CCTV, Red, Intrusión, Control de Accesos e Interfonía.
+* **Detección Interactiva de Nuevos Catálogos**: Al importar, detecta automáticamente si el archivo contiene subsistemas o tipos de dispositivos no registrados y solicita confirmación al usuario antes de registrarlos.
+
+### 📎 Visor Preliminar de Archivos y Hojas Excel en Adjuntos
+* **Visor Integrado de Excel**: Previsualización directa de libros `.xlsx`, `.xls`, `.ods`, `.xlsm` sin descargas externas.
+* **Navegación Multi-Hoja**: Pestañas superiores para alternar entre hojas con recuento de filas.
+* **Buscador en Tiempo Real**: Filtrado dinámico de celdas y filas en la hoja activa.
+* **Previsualización Multimedia**: Soporte integrado para PDF, imágenes (PNG, JPG, SVG, WebP), archivos de texto y código, audio y vídeo.
 
 ### 🔐 Bóveda de Credenciales Cifradas (AES-256-GCM)
 * Almacenamiento seguro de múltiples cuentas de acceso por dispositivo (Administrador, Operador, RTSP, etc.).
 * Cifrado en reposo simétrico con vector de inicialización (IV) único y verificación de integridad (GCM Tag).
-
-### 📊 Importación y Exportación Masiva en Excel
-* **Plantilla Estructurada**: Descarga de plantilla `.xlsx` con 19 columnas alineadas y hoja adicional `"Guía de Campos"` con descripciones y ejemplos para CCTV, Red, Intrusión, Accesos e Interfonía.
-* **Detección Interactiva de Nuevos Catálogos**: Al importar, detecta automáticamente si el archivo contiene subsistemas o tipos de dispositivos no registrados y solicita confirmación al usuario antes de importarlos.
-* **Resolución Inteligente**: El importador realiza normalización sin distinción de mayúsculas, minúsculas, tildes o términos parciales para asignar automáticamente Subsistemas, Tipos y Estados existentes.
 
 ### 💾 Copias de Seguridad y Restauración
 * Generación y exportación de backups integrales de la base de datos en formato JSON descargable.
@@ -305,7 +321,7 @@ La API se documenta interactivamente en `/api/docs`. A continuación se resume l
 | **Adjuntos** | `GET` | `/api/v1/systems/:systemId/attachments` | Listar adjuntos de un sistema |
 | | `POST` | `/api/v1/systems/attachments` | Subir archivo adjunto (Multipart) |
 | | `GET` | `/api/v1/systems/attachments/:id/download` | Descargar archivo adjunto |
-| | `GET` | `/api/v1/systems/attachments/:id/preview` | Previsualizar adjunto (PDF / Imagen) |
+| | `GET` | `/api/v1/systems/attachments/:id/preview` | Previsualizar adjunto (PDF / Imagen / Excel) |
 | | `DELETE` | `/api/v1/systems/attachments/:id` | Borrar archivo adjunto |
 | **Dispositivos** | `GET` | `/api/v1/devices` | Consultar dispositivos filtrados |
 | | `POST` | `/api/v1/devices` | Crear dispositivo individual |

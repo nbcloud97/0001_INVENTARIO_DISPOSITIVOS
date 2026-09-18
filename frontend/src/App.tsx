@@ -16,6 +16,7 @@ import { BulkDeviceModal } from './components/BulkDeviceModal';
 import { ImportExcelModal } from './components/ImportExcelModal';
 import { DeviceDetailsModal } from './components/DeviceDetailsModal';
 import { ConfirmModal } from './components/ConfirmModal';
+import { ExportModal } from './components/ExportModal';
 import { Beta10ImportModal } from './components/Beta10ImportModal';
 import { LoginView } from './components/LoginView';
 import { SystemNotesView } from './components/SystemNotesView';
@@ -25,8 +26,7 @@ import { GeneralSettingsView } from './components/GeneralSettingsView';
 
 import { Client, Subsystem, System, Device, DeviceType, DeviceStatus, hasPermission } from './types';
 import { api, UserProfile } from './services/api';
-import { exportSystemDevicesToExcel } from './utils/excelExport';
-import { ArrowLeft, Building2, Cpu, Layers3, FileSpreadsheet, ChevronDown, Upload, HardDrive, FileText, Paperclip, Edit2, Shield, Tag, Settings, Trash2 } from 'lucide-react';
+import { ArrowLeft, Building2, Cpu, Layers3, FileSpreadsheet, ChevronDown, Upload, HardDrive, FileText, Paperclip, Edit2, Shield, Tag, Settings, Trash2, Download } from 'lucide-react';
 
 export const App: React.FC = () => {
   // Autenticación State
@@ -145,7 +145,7 @@ export const App: React.FC = () => {
 
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [exporting, setExporting] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   // Close options menu on outside click
   useEffect(() => {
@@ -385,21 +385,10 @@ export const App: React.FC = () => {
     setIsDeviceModalOpen(true);
   };
 
-  // Exportar Excel
-  const handleExport = async () => {
+  // Exportar Dispositivos (Abrir Modal con selector Excel / PDF y opciones de credenciales)
+  const handleExport = () => {
     if (!activeSystem) return;
-    setExporting(true);
-    try {
-      await exportSystemDevicesToExcel(
-        activeSystem.name,
-        activeClient?.name || '',
-        devices
-      );
-    } catch (err: any) {
-      alert(`Error al exportar a Excel: ${err.message}`);
-    } finally {
-      setExporting(false);
-    }
+    setIsExportModalOpen(true);
   };
 
   const handleLogout = () => {
@@ -530,10 +519,9 @@ export const App: React.FC = () => {
                                 setIsOptionsMenuOpen(false);
                                 handleExport();
                               }}
-                              disabled={exporting}
                             >
-                              <FileSpreadsheet size={15} color="var(--accent-emerald)" />
-                              {exporting ? 'Exportando...' : 'Exportar'}
+                              <Download size={15} color="var(--accent-blue)" />
+                              Exportar
                             </button>
 
                             {/* Opción 2: Importación */}
@@ -1074,6 +1062,15 @@ export const App: React.FC = () => {
         onSuccess={loadData}
         systemId={selectedSystemId}
         systemName={activeSystem?.name}
+      />
+
+      <ExportModal
+        isOpen={isExportModalOpen}
+        onClose={() => setIsExportModalOpen(false)}
+        systemId={selectedSystemId}
+        systemName={activeSystem?.name || ''}
+        clientName={activeClient?.name || ''}
+        devices={devices}
       />
 
       <DeviceDetailsModal

@@ -1,250 +1,351 @@
 import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 import { Device } from '../types';
 import { api } from '../services/api';
 
+/**
+ * Exporta los dispositivos de un sistema en una hoja Excel (.xlsx) maquetada
+ * profesionalmente con formato nativo de tabla, filtros, estilos de celda y experiencia visual cuidada.
+ */
 export async function exportSystemDevicesToExcel(
   systemName: string,
   clientName: string,
-  devices: Device[]
+  devices: Device[],
+  includeCredentials = false
 ) {
-  // Obtener la información completa incluyendo credenciales descifradas si están disponibles
-  const rows = await Promise.all(
+  // Obtener la información completa incluyendo credenciales descifradas si se solicita explícitamente
+  const rawData = await Promise.all(
     devices.map(async (device) => {
-      let credsSummary = '';
-      if (device.hasCredentials) {
+      let username = '';
+      let password = '';
+      let userDesc = '';
+      if (includeCredentials && device.hasCredentials) {
         try {
           const creds = await api.getDeviceCredentials(device.id);
           if (Array.isArray(creds) && creds.length > 0) {
-            credsSummary = creds
-              .map((c) => `${c.title || 'ACCESO'}: [USER: ${c.username || '-'}, PASS: ${c.password || '-'}]`)
-              .join(' | ');
+            userDesc = creds.map((c) => c.title || 'ACCESO').join(' | ');
+            username = creds.map((c) => c.username || '').join(' | ');
+            password = creds.map((c) => c.password || '').join(' | ');
           }
         } catch {
-          credsSummary = 'CON CREDENCIALES';
+          userDesc = 'CON CREDENCIALES';
         }
       }
 
-      const portsSummary = Array.isArray(device.communicationPorts) && device.communicationPorts.length > 0
-        ? device.communicationPorts.map((p) => p.service ? `${p.port} (${p.service})` : `${p.port}`).join(', ')
-        : '';
+      const ports =
+        Array.isArray(device.communicationPorts) && device.communicationPorts.length > 0
+          ? device.communicationPorts.map((p) => p.port).join(', ')
+          : '';
+      const portNames =
+        Array.isArray(device.communicationPorts) && device.communicationPorts.length > 0
+          ? device.communicationPorts.map((p) => p.service || '').join(', ')
+          : '';
 
-      return {
-        'CLIENTE': device.client?.name || clientName || '',
-        'SISTEMA': device.system?.name || systemName || '',
-        'SUBSISTEMA': device.subsystem?.name || '',
-        'NOMBRE ASIGNADO': device.assignedName || '',
-        'ESTADO': device.statusName || 'Operativo',
-        'MARCA': device.brand || '',
-        'MODELO': device.model || '',
-        'NÚMERO DE SERIE': device.serialNumber || '',
-        'DIRECCIÓN IP': device.ipAddress || '',
-        'MÁSCARA DE SUBRED': device.subnetMask || '',
-        'PUERTA DE ENLACE': device.gateway || '',
-        'PUERTOS DE COMUNICACIÓN': portsSummary,
-        'DIRECCIÓN MAC': device.macAddress || '',
-        'RACK': device.rackCabinet || '',
-        'REFERENCIA SWITCH': device.switchName || '',
-        'SWITCH PUERTO': device.switchPort || '',
-        'CREDENCIALES': credsSummary,
-        'NOTAS': device.notes || '',
-      };
+      return [
+        device.subsystem?.name || '',
+        device.deviceTypeName || '',
+        device.statusName || 'Operativo',
+        device.assignedName || '',
+        device.brand || '',
+        device.model || '',
+        device.serialNumber || '',
+        device.ipAddress || '',
+        device.subnetMask || '',
+        device.gateway || '',
+        device.macAddress || '',
+        device.rackCabinet || '',
+        device.switchName || '',
+        device.switchPort || '',
+        userDesc,
+        username,
+        password,
+        ports,
+        portNames,
+      ];
     })
   );
 
-  // Crear la hoja de cálculo XLSX
-  const worksheet = XLSX.utils.json_to_sheet(rows);
-
-  // Ajustar anchos de columna automáticamente para legibilidad (18 columnas)
-  const columnWidths = [
-    { wch: 22 }, // CLIENTE
-    { wch: 25 }, // SISTEMA
-    { wch: 15 }, // SUBSISTEMA
-    { wch: 28 }, // NOMBRE ASIGNADO
-    { wch: 16 }, // ESTADO
-    { wch: 16 }, // MARCA
-    { wch: 18 }, // MODELO
-    { wch: 20 }, // NÚMERO DE SERIE
-    { wch: 18 }, // DIRECCIÓN IP
-    { wch: 20 }, // MÁSCARA DE SUBRED
-    { wch: 20 }, // PUERTA DE ENLACE
-    { wch: 25 }, // PUERTOS DE COMUNICACIÓN
-    { wch: 20 }, // DIRECCIÓN MAC
-    { wch: 20 }, // RACK
-    { wch: 22 }, // REFERENCIA SWITCH
-    { wch: 16 }, // SWITCH PUERTO
-    { wch: 40 }, // CREDENCIALES
-    { wch: 35 }, // NOTAS
+  const columns = [
+    { name: 'SUBSISTEMA', filterButton: true },
+    { name: 'TIPO_DISPOSITIVO', filterButton: true },
+    { name: 'ESTADO', filterButton: true },
+    { name: 'NOMBRE', filterButton: true },
+    { name: 'MARCA', filterButton: true },
+    { name: 'MODELO', filterButton: true },
+    { name: 'NUMERO_SERIE', filterButton: true },
+    { name: 'IP', filterButton: true },
+    { name: 'MASCARA', filterButton: true },
+    { name: 'PUERTA_ENLACE', filterButton: true },
+    { name: 'MAC', filterButton: true },
+    { name: 'RACK', filterButton: true },
+    { name: 'SWITCH', filterButton: true },
+    { name: 'SWITCH_PUERTO', filterButton: true },
+    { name: 'USUARIO_DESCRIPCION', filterButton: true },
+    { name: 'USUARIO', filterButton: true },
+    { name: 'CONTRASEÑA', filterButton: true },
+    { name: 'PUERTO', filterButton: true },
+    { name: 'PUERTO_NOMBRE', filterButton: true },
   ];
-  worksheet['!cols'] = columnWidths;
 
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Inventario Dispositivos');
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = 'Sistema de Inventario de Dispositivos';
+  workbook.created = new Date();
 
-  // Formatear el nombre del archivo sanitizado
+  const worksheet = workbook.addWorksheet('Dispositivos', {
+    views: [{ state: 'frozen', xSplit: 0, ySplit: 1, showGridLines: true }],
+  });
+
+  // Si hay datos, agregarlos como tabla nativa de Excel con estilo corporativo
+  if (rawData.length > 0) {
+    worksheet.addTable({
+      name: 'TablaDispositivos',
+      ref: 'A1',
+      headerRow: true,
+      totalsRow: false,
+      style: {
+        theme: 'TableStyleMedium9', // Estilo azul marino/slate con filas alternas
+        showRowStripes: true,
+      },
+      columns,
+      rows: rawData,
+    });
+  } else {
+    // Si no hay datos, crear la fila de encabezados formateada
+    const headerRow = worksheet.addRow(columns.map((c) => c.name));
+    headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 10, name: 'Segoe UI' };
+    headerRow.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF1E293B' },
+    };
+    headerRow.alignment = { vertical: 'middle', horizontal: 'center' };
+    headerRow.height = 24;
+  }
+
+  // Anchos y alineaciones visuales por columna
+  const colWidths = [
+    { width: 22, align: 'left' },    // SUBSISTEMA
+    { width: 24, align: 'left' },    // TIPO_DISPOSITIVO
+    { width: 18, align: 'center' },  // ESTADO
+    { width: 28, align: 'left' },    // NOMBRE
+    { width: 18, align: 'left' },    // MARCA
+    { width: 20, align: 'left' },    // MODELO
+    { width: 22, align: 'center' },  // NUMERO_SERIE
+    { width: 18, align: 'center' },  // IP
+    { width: 18, align: 'center' },  // MASCARA
+    { width: 18, align: 'center' },  // PUERTA_ENLACE
+    { width: 20, align: 'center' },  // MAC
+    { width: 22, align: 'left' },    // RACK
+    { width: 22, align: 'left' },    // SWITCH
+    { width: 16, align: 'center' },  // SWITCH_PUERTO
+    { width: 22, align: 'left' },    // USUARIO_DESCRIPCION
+    { width: 18, align: 'left' },    // USUARIO
+    { width: 20, align: 'left' },    // CONTRASEÑA
+    { width: 18, align: 'center' },  // PUERTO
+    { width: 20, align: 'left' },    // PUERTO_NOMBRE
+  ];
+
+  colWidths.forEach((cw, idx) => {
+    const col = worksheet.getColumn(idx + 1);
+    col.width = cw.width;
+    col.alignment = { vertical: 'middle', horizontal: cw.align as any };
+  });
+
+  // Ajustar altura de las filas
+  worksheet.eachRow((row, rowNumber) => {
+    if (rowNumber === 1) {
+      row.height = 26;
+      row.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 10, name: 'Segoe UI' };
+      row.alignment = { vertical: 'middle', horizontal: 'center' };
+    } else {
+      row.height = 20;
+      row.font = { size: 9.5, name: 'Segoe UI' };
+    }
+  });
+
+  // Generar buffer y descargar archivo
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {
+    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+
   const safeSystemName = (systemName || 'SISTEMA').replace(/[^a-zA-Z0-9_-]/g, '_').toUpperCase();
   const safeClientName = (clientName || 'CLIENTE').replace(/[^a-zA-Z0-9_-]/g, '_').toUpperCase();
-  const fileName = `${safeClientName}_${safeSystemName}_DISPOSITIVOS.xlsx`;
+  const credsSuffix = includeCredentials ? '_CON_CREDENCIALES' : '';
+  const fileName = `${safeClientName}_${safeSystemName}_DISPOSITIVOS${credsSuffix}.xlsx`;
 
-  // Descargar archivo Excel .xlsx directamente en el navegador
-  XLSX.writeFile(workbook, fileName);
+  const url = window.URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = fileName;
+  document.body.appendChild(anchor);
+  anchor.click();
+  document.body.removeChild(anchor);
+  window.URL.revokeObjectURL(url);
 }
 
 /**
- * Genera y descarga la plantilla oficial de Excel para la importación masiva de dispositivos (incluye credenciales y guía)
+ * Genera y descarga la plantilla oficial de Excel para la importación masiva de dispositivos
+ * Con los 19 campos exactos: SUBSISTEMA, TIPO_DISPOSITIVO, ESTADO, NOMBRE, MARCA, MODELO, NUMERO_SERIE, IP, MASCARA, PUERTA_ENLACE, MAC, RACK, SWITCH, SWITCH_PUERTO, USUARIO_DESCRIPCION, USUARIO, CONTRASEÑA, PUERTO, PUERTO_NOMBRE
  */
 export function downloadImportTemplate() {
   const templateRows = [
     {
-      'NOMBRE ASIGNADO': 'CAM_ACCESO_PRINCIPAL_01',
       'SUBSISTEMA': 'CCTV',
-      'TIPO DE DISPOSITIVO': 'Cámara de vídeo',
+      'TIPO_DISPOSITIVO': 'Cámara de vídeo',
       'ESTADO': 'Operativo',
+      'NOMBRE': 'CAM_ACCESO_PRINCIPAL_01',
       'MARCA': 'HIKVISION',
       'MODELO': 'DS-2CD2143G0-I',
-      'NÚMERO DE SERIE': 'HKV-2026-987651',
-      'DIRECCIÓN IP': '192.168.1.101',
-      'MÁSCARA DE SUBRED': '255.255.255.0',
-      'PUERTA DE ENLACE': '192.168.1.1',
-      'PUERTOS DE COMUNICACIÓN': '80 (HTTP), 554 (RTSP), 8000 (SDK)',
-      'DIRECCIÓN MAC': '00:11:22:33:44:55',
+      'NUMERO_SERIE': 'HKV-2026-987651',
+      'IP': '192.168.1.101',
+      'MASCARA': '255.255.255.0',
+      'PUERTA_ENLACE': '192.168.1.1',
+      'MAC': '00:11:22:33:44:55',
       'RACK': 'RACK R1 - PLANTA 0',
-      'REFERENCIA SWITCH': 'SW-POE-CORE-01',
-      'SWITCH PUERTO': 'PUERTO 1',
-      'USUARIO CREDENCIAL': 'ADMIN',
-      'CONTRASEÑA CREDENCIAL': 'PASSWORD2026!',
-      'ETIQUETA CREDENCIAL': 'ACCESO WEB',
-      'NOTAS': 'CÁMARA DOMO 4MP EN ENTRADA PRINCIPAL',
+      'SWITCH': 'SW-POE-CORE-01',
+      'SWITCH_PUERTO': 'PUERTO 1',
+      'USUARIO_DESCRIPCION': 'ACCESO WEB',
+      'USUARIO': 'ADMIN',
+      'CONTRASEÑA': 'PASSWORD2026!',
+      'PUERTO': '80, 554, 8000',
+      'PUERTO_NOMBRE': 'HTTP, RTSP, SDK',
     },
     {
-      'NOMBRE ASIGNADO': 'SW_POE_PLANTA_01',
       'SUBSISTEMA': 'Red',
-      'TIPO DE DISPOSITIVO': 'Switch PoE',
+      'TIPO_DISPOSITIVO': 'Switch PoE',
       'ESTADO': 'Operativo',
+      'NOMBRE': 'SW_POE_PLANTA_01',
       'MARCA': 'CISCO',
       'MODELO': 'CBS350-24P-4G',
-      'NÚMERO DE SERIE': 'FCW242100AB',
-      'DIRECCIÓN IP': '192.168.1.10',
-      'MÁSCARA DE SUBRED': '255.255.255.0',
-      'PUERTA DE ENLACE': '192.168.1.1',
-      'PUERTOS DE COMUNICACIÓN': '22 (SSH), 443 (HTTPS)',
-      'DIRECCIÓN MAC': '00:1A:2B:3C:4D:5E',
+      'NUMERO_SERIE': 'FCW242100AB',
+      'IP': '192.168.1.10',
+      'MASCARA': '255.255.255.0',
+      'PUERTA_ENLACE': '192.168.1.1',
+      'MAC': '00:1A:2B:3C:4D:5E',
       'RACK': 'RACK R1 - PLANTA 0',
-      'REFERENCIA SWITCH': 'SW-POE-CORE-01',
-      'SWITCH PUERTO': 'GIGA 1',
-      'USUARIO CREDENCIAL': 'CISCO_ADMIN',
-      'CONTRASEÑA CREDENCIAL': 'ADMIN_PASS_2026',
-      'ETIQUETA CREDENCIAL': 'GESTIÓN SSH/WEB',
-      'NOTAS': 'SWITCH POE 24 PUERTOS GIGABIT',
+      'SWITCH': 'SW-POE-CORE-01',
+      'SWITCH_PUERTO': 'GIGA 1',
+      'USUARIO_DESCRIPCION': 'GESTIÓN SSH/WEB',
+      'USUARIO': 'CISCO_ADMIN',
+      'CONTRASEÑA': 'ADMIN_PASS_2026',
+      'PUERTO': '22, 443',
+      'PUERTO_NOMBRE': 'SSH, HTTPS',
     },
     {
-      'NOMBRE ASIGNADO': 'CENTRAL_INTRUSION_01',
       'SUBSISTEMA': 'Intrusión / Alarma',
-      'TIPO DE DISPOSITIVO': 'Central de alarma',
+      'TIPO_DISPOSITIVO': 'Central de alarma',
       'ESTADO': 'Operativo',
+      'NOMBRE': 'CENTRAL_INTRUSION_01',
       'MARCA': 'HONEYWELL',
       'MODELO': 'GALAXY FLEX 50',
-      'NÚMERO DE SERIE': 'HON-INT-2026-02',
-      'DIRECCIÓN IP': '192.168.1.102',
-      'MÁSCARA DE SUBRED': '255.255.255.0',
-      'PUERTA DE ENLACE': '192.168.1.1',
-      'PUERTOS DE COMUNICACIÓN': '443 (HTTPS), 10001',
-      'DIRECCIÓN MAC': '00:11:22:33:44:56',
+      'NUMERO_SERIE': 'HON-INT-2026-02',
+      'IP': '192.168.1.102',
+      'MASCARA': '255.255.255.0',
+      'PUERTA_ENLACE': '192.168.1.1',
+      'MAC': '00:11:22:33:44:56',
       'RACK': 'RACK SECUNDARIO R2',
-      'REFERENCIA SWITCH': 'SW-POE-CORE-01',
-      'SWITCH PUERTO': 'PUERTO 2',
-      'USUARIO CREDENCIAL': 'OPERADOR',
-      'CONTRASEÑA CREDENCIAL': 'SECURE2026#',
-      'ETIQUETA CREDENCIAL': 'ACCESO PRINCIPAL',
-      'NOTAS': 'CENTRALITA CON MÓDULO IP Y BATERÍA DE RESPALDO',
+      'SWITCH': 'SW-POE-CORE-01',
+      'SWITCH_PUERTO': 'PUERTO 2',
+      'USUARIO_DESCRIPCION': 'ACCESO PRINCIPAL',
+      'USUARIO': 'OPERADOR',
+      'CONTRASEÑA': 'SECURE2026#',
+      'PUERTO': '443, 10001',
+      'PUERTO_NOMBRE': 'HTTPS, BUS IP',
     },
     {
-      'NOMBRE ASIGNADO': 'CONTROLADORA_ACCESOS_01',
       'SUBSISTEMA': 'Control de accesos',
-      'TIPO DE DISPOSITIVO': 'Controladora de accesos',
+      'TIPO_DISPOSITIVO': 'Controladora de accesos',
       'ESTADO': 'Operativo',
+      'NOMBRE': 'CONTROLADORA_ACCESOS_01',
       'MARCA': 'DORLET',
       'MODELO': 'AS-600',
-      'NÚMERO DE SERIE': 'DOR-ACC-8821',
-      'DIRECCIÓN IP': '192.168.1.103',
-      'MÁSCARA DE SUBRED': '255.255.255.0',
-      'PUERTA DE ENLACE': '192.168.1.1',
-      'PUERTOS DE COMUNICACIÓN': '4001, 80',
-      'DIRECCIÓN MAC': '00:11:22:33:44:57',
+      'NUMERO_SERIE': 'DOR-ACC-8821',
+      'IP': '192.168.1.103',
+      'MASCARA': '255.255.255.0',
+      'PUERTA_ENLACE': '192.168.1.1',
+      'MAC': '00:11:22:33:44:57',
       'RACK': 'RACK R1 - PLANTA 0',
-      'REFERENCIA SWITCH': 'SW-POE-CORE-01',
-      'SWITCH PUERTO': 'PUERTO 3',
-      'USUARIO CREDENCIAL': 'ADMIN',
-      'CONTRASEÑA CREDENCIAL': 'DORLET2026',
-      'ETIQUETA CREDENCIAL': 'GESTIÓN DORLET',
-      'NOTAS': 'CONTROLADORA PARA PUERTAS PRINCIPALES',
+      'SWITCH': 'SW-POE-CORE-01',
+      'SWITCH_PUERTO': 'PUERTO 3',
+      'USUARIO_DESCRIPCION': 'GESTIÓN DORLET',
+      'USUARIO': 'ADMIN',
+      'CONTRASEÑA': 'DORLET2026',
+      'PUERTO': '443, 3001',
+      'PUERTO_NOMBRE': 'HTTPS, DORLET BUS',
     },
     {
-      'NOMBRE ASIGNADO': 'PLACA_CALLE_INTERFONIA_01',
-      'SUBSISTEMA': 'Interfonía',
-      'TIPO DE DISPOSITIVO': 'Placa de calle',
+      'SUBSISTEMA': 'Interfonía / Megafonía',
+      'TIPO_DISPOSITIVO': 'Placa de calle IP',
       'ESTADO': 'Operativo',
+      'NOMBRE': 'INTERFONO_ACCESO_PEATONAL',
       'MARCA': 'FERMAX',
-      'MODELO': 'MEET IP',
-      'NÚMERO DE SERIE': 'FMX-MEET-2026',
-      'DIRECCIÓN IP': '192.168.1.104',
-      'MÁSCARA DE SUBRED': '255.255.255.0',
-      'PUERTA DE ENLACE': '192.168.1.1',
-      'PUERTOS DE COMUNICACIÓN': '5060 (SIP), 80 (HTTP)',
-      'DIRECCIÓN MAC': '00:11:22:33:44:58',
-      'RACK': '',
-      'REFERENCIA SWITCH': 'SW-POE-CORE-01',
-      'SWITCH PUERTO': 'PUERTO 4',
-      'USUARIO CREDENCIAL': 'ADMIN',
-      'CONTRASEÑA CREDENCIAL': 'FERMAX1234',
-      'ETIQUETA CREDENCIAL': 'CONFIGURACIÓN SIP',
-      'NOTAS': 'PLACA DE CALLE VÍDEO IP CON TECLADO',
+      'MODELO': 'MEET IP MILO',
+      'NUMERO_SERIE': 'FMX-2026-009',
+      'IP': '192.168.1.104',
+      'MASCARA': '255.255.255.0',
+      'PUERTA_ENLACE': '192.168.1.1',
+      'MAC': '00:11:22:33:44:58',
+      'RACK': 'RACK R1 - PLANTA 0',
+      'SWITCH': 'SW-POE-CORE-01',
+      'SWITCH_PUERTO': 'PUERTO 4',
+      'USUARIO_DESCRIPCION': 'SIP SERVER',
+      'USUARIO': 'FERMAX_ADMIN',
+      'CONTRASEÑA': 'FERMAX_PASS_2026',
+      'PUERTO': '5060, 80',
+      'PUERTO_NOMBRE': 'SIP, HTTP',
     },
   ];
 
   const worksheet = XLSX.utils.json_to_sheet(templateRows);
 
-  // Anchos exactos para las 19 columnas de la plantilla
   worksheet['!cols'] = [
-    { wch: 28 }, // 1. NOMBRE ASIGNADO
-    { wch: 22 }, // 2. SUBSISTEMA
-    { wch: 25 }, // 3. TIPO DE DISPOSITIVO
-    { wch: 18 }, // 4. ESTADO
-    { wch: 18 }, // 5. MARCA
-    { wch: 20 }, // 6. MODELO
-    { wch: 22 }, // 7. NÚMERO DE SERIE
-    { wch: 18 }, // 8. DIRECCIÓN IP
-    { wch: 20 }, // 9. MÁSCARA DE SUBRED
-    { wch: 20 }, // 10. PUERTA DE ENLACE
-    { wch: 32 }, // 11. PUERTOS DE COMUNICACIÓN
-    { wch: 20 }, // 12. DIRECCIÓN MAC
-    { wch: 22 }, // 13. RACK
-    { wch: 22 }, // 14. REFERENCIA SWITCH
-    { wch: 18 }, // 15. SWITCH PUERTO
-    { wch: 22 }, // 16. USUARIO CREDENCIAL
-    { wch: 25 }, // 17. CONTRASEÑA CREDENCIAL
-    { wch: 22 }, // 18. ETIQUETA CREDENCIAL
-    { wch: 40 }, // 19. NOTAS
+    { wch: 22 }, // SUBSISTEMA
+    { wch: 25 }, // TIPO_DISPOSITIVO
+    { wch: 16 }, // ESTADO
+    { wch: 28 }, // NOMBRE
+    { wch: 18 }, // MARCA
+    { wch: 20 }, // MODELO
+    { wch: 22 }, // NUMERO_SERIE
+    { wch: 18 }, // IP
+    { wch: 20 }, // MASCARA
+    { wch: 20 }, // PUERTA_ENLACE
+    { wch: 20 }, // MAC
+    { wch: 22 }, // RACK
+    { wch: 22 }, // SWITCH
+    { wch: 18 }, // SWITCH_PUERTO
+    { wch: 24 }, // USUARIO_DESCRIPCION
+    { wch: 20 }, // USUARIO
+    { wch: 22 }, // CONTRASEÑA
+    { wch: 20 }, // PUERTO
+    { wch: 22 }, // PUERTO_NOMBRE
   ];
 
-  // Hoja 2: Guía de Referencia y Catálogos
   const guideRows = [
-    { 'CAMPO': 'NOMBRE ASIGNADO', 'OBLIGATORIO': 'SÍ', 'DESCRIPCIÓN': 'Nombre único identificativo del equipo (ej: CAM_ENTRADA_01)' },
-    { 'CAMPO': 'SUBSISTEMA', 'OBLIGATORIO': 'RECOMENDADO', 'DESCRIPCIÓN': 'Red, CCTV, Interfonía, Control de accesos, Intrusión / Alarma' },
-    { 'CAMPO': 'TIPO DE DISPOSITIVO', 'OBLIGATORIO': 'SÍ', 'DESCRIPCIÓN': 'Tipo catalogado (ej: Cámara de vídeo, Switch PoE, Central de alarma, Grabadora NVR)' },
+    { 'CAMPO': 'SUBSISTEMA', 'OBLIGATORIO': 'SÍ', 'DESCRIPCIÓN': 'Nombre del subsistema (ej: CCTV, Red, Intrusión, Control de accesos)' },
+    { 'CAMPO': 'TIPO_DISPOSITIVO', 'OBLIGATORIO': 'SÍ', 'DESCRIPCIÓN': 'Tipo catalogado (ej: Cámara de vídeo, Switch PoE, Central de alarma, Grabadora NVR)' },
     { 'CAMPO': 'ESTADO', 'OBLIGATORIO': 'NO', 'DESCRIPCIÓN': 'Operativo, Falta instalación, En mantenimiento, Baja (Por defecto: Operativo)' },
-    { 'CAMPO': 'MARCA / MODELO', 'OBLIGATORIO': 'NO', 'DESCRIPCIÓN': 'Fabricante y modelo del dispositivo (ej: HIKVISION, CISCO, FERMAX)' },
-    { 'CAMPO': 'NÚMERO DE SERIE', 'OBLIGATORIO': 'NO', 'DESCRIPCIÓN': 'Número de serie o identificador de hardware del fabricante' },
-    { 'CAMPO': 'DIRECCIÓN IP / MÁSCARA / GATEWAY', 'OBLIGATORIO': 'NO', 'DESCRIPCIÓN': 'Parámetros de red IPv4 (ej. IP: 192.168.1.100, Máscara: 255.255.255.0, Gateway: 192.168.1.1)' },
-    { 'CAMPO': 'DIRECCIÓN MAC', 'OBLIGATORIO': 'NO', 'DESCRIPCIÓN': 'Dirección física de red (ej: 00:11:22:33:44:55)' },
-    { 'CAMPO': 'PUERTOS DE COMUNICACIÓN', 'OBLIGATORIO': 'NO', 'DESCRIPCIÓN': 'Puertos y servicios separados por coma (ej: 80 (HTTP), 443 (HTTPS), 554 (RTSP))' },
-    { 'CAMPO': 'RACK / SWITCH / PUERTO', 'OBLIGATORIO': 'NO', 'DESCRIPCIÓN': 'Ubicación física en armario rack, switch de parcheo y puerto de red' },
-    { 'CAMPO': 'CREDENCIALES', 'OBLIGATORIO': 'NO', 'DESCRIPCIÓN': 'Usuario, Contraseña y Etiqueta (Se almacenan cifradas en AES-256-GCM)' },
-    { 'CAMPO': 'NOTAS', 'OBLIGATORIO': 'NO', 'DESCRIPCIÓN': 'Observaciones técnicas o aclaraciones sobre el equipo' },
+    { 'CAMPO': 'NOMBRE', 'OBLIGATORIO': 'SÍ', 'DESCRIPCIÓN': 'Nombre único identificativo del equipo (ej: CAM_ENTRADA_01)' },
+    { 'CAMPO': 'MARCA', 'OBLIGATORIO': 'NO', 'DESCRIPCIÓN': 'Fabricante del dispositivo (ej: HIKVISION, CISCO, FERMAX)' },
+    { 'CAMPO': 'MODELO', 'OBLIGATORIO': 'NO', 'DESCRIPCIÓN': 'Modelo específico del dispositivo (ej: DS-2CD2143G0-I)' },
+    { 'CAMPO': 'NUMERO_SERIE', 'OBLIGATORIO': 'NO', 'DESCRIPCIÓN': 'Número de serie o identificador de hardware del fabricante' },
+    { 'CAMPO': 'IP', 'OBLIGATORIO': 'NO', 'DESCRIPCIÓN': 'Dirección IPv4 asignada (ej: 192.168.1.101)' },
+    { 'CAMPO': 'MASCARA', 'OBLIGATORIO': 'NO', 'DESCRIPCIÓN': 'Máscara de subred (ej: 255.255.255.0 ó /24)' },
+    { 'CAMPO': 'PUERTA_ENLACE', 'OBLIGATORIO': 'NO', 'DESCRIPCIÓN': 'Puerta de enlace predeterminada / Default Gateway (ej: 192.168.1.1)' },
+    { 'CAMPO': 'MAC', 'OBLIGATORIO': 'NO', 'DESCRIPCIÓN': 'Dirección física de red MAC (ej: 00:11:22:33:44:55)' },
+    { 'CAMPO': 'RACK', 'OBLIGATORIO': 'NO', 'DESCRIPCIÓN': 'Armario o Rack de ubicación física (ej: RACK R1 - PLANTA 0)' },
+    { 'CAMPO': 'SWITCH', 'OBLIGATORIO': 'NO', 'DESCRIPCIÓN': 'Nombre o referencia del switch donde conecta (ej: SW-POE-CORE-01)' },
+    { 'CAMPO': 'SWITCH_PUERTO', 'OBLIGATORIO': 'NO', 'DESCRIPCIÓN': 'Puerto o boca de conexión en el switch (ej: PUERTO 1)' },
+    { 'CAMPO': 'USUARIO_DESCRIPCION', 'OBLIGATORIO': 'NO', 'DESCRIPCIÓN': 'Etiqueta o rol de la cuenta (ej: ACCESO WEB, ADMIN, OPERADOR)' },
+    { 'CAMPO': 'USUARIO', 'OBLIGATORIO': 'NO', 'DESCRIPCIÓN': 'Nombre de usuario de acceso' },
+    { 'CAMPO': 'CONTRASEÑA', 'OBLIGATORIO': 'NO', 'DESCRIPCIÓN': 'Contraseña de acceso (se almacenará cifrada en AES-256-GCM)' },
+    { 'CAMPO': 'PUERTO', 'OBLIGATORIO': 'NO', 'DESCRIPCIÓN': 'Puerto o lista de puertos numéricos (ej: 80 ó 80, 554, 8000)' },
+    { 'CAMPO': 'PUERTO_NOMBRE', 'OBLIGATORIO': 'NO', 'DESCRIPCIÓN': 'Nombre o protocolo del puerto (ej: HTTP ó HTTP, RTSP, SDK)' },
   ];
 
   const guideWorksheet = XLSX.utils.json_to_sheet(guideRows);
   guideWorksheet['!cols'] = [
-    { wch: 35 },
+    { wch: 30 },
     { wch: 16 },
     { wch: 80 },
   ];
@@ -253,5 +354,5 @@ export function downloadImportTemplate() {
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Dispositivos');
   XLSX.utils.book_append_sheet(workbook, guideWorksheet, 'Guía de Campos');
 
-  XLSX.writeFile(workbook, 'PLANTILLA_IMPORTACION_DISPOSITIVOS.xlsx');
+  XLSX.writeFile(workbook, 'importacion_dispositivos.xlsx');
 }

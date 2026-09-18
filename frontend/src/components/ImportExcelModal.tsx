@@ -87,51 +87,54 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
       return '';
     };
 
-    const assignedName = getValue(
-      [
-        'NOMBRE ASIGNADO',
-        'NOMBRE DEL DISPOSITIVO',
-        'NOMBRE DISPOSITIVO',
-        'NOMBRE DEL EQUIPO',
-        'NOMBRE EQUIPO',
-        'NOMBRE',
-        'DISPOSITIVO',
-        'EQUIPO',
-        'HOSTNAME',
-        'ASIGNADO',
-        'ELEMENTO',
-      ],
-      /\b(?:NOMBRE\s*ASIGNADO|NOMBRE\s*DISPOSITIVO|NOMBRE\s*EQUIPO|HOSTNAME)\b/
-    );
-
     const subsystemName = getValue(
-      ['SUBSISTEMA', 'SUB SISTEMA', 'SUB-SISTEMA', 'SUBSISTEMAS', 'SUBSYSTEM'],
+      ['SUBSISTEMA', 'SUB SISTEMA', 'SUB_SISTEMA', 'SUB-SISTEMA', 'SUBSISTEMAS', 'SUBSYSTEM'],
       /\b(?:SUBSISTEMA|SUB\s*SISTEMA|SUBSYSTEM)\b/
     );
 
     const deviceTypeName = getValue(
       [
+        'TIPO_DISPOSITIVO',
         'TIPO DE DISPOSITIVO',
         'TIPO DISPOSITIVO',
+        'TIPO_EQUIPO',
         'TIPO DE EQUIPO',
         'TIPO EQUIPO',
         'TIPO DE ELEMENTO',
         'DEVICE TYPE',
         'TIPO',
       ],
-      /\b(?:TIPO\s*DE\s*DISPOSITIVO|TIPO\s*DISPOSITIVO|TIPO\s*DE\s*EQUIPO|TIPO\s*EQUIPO|DEVICE\s*TYPE)\b/
+      /\b(?:TIPO_DISPOSITIVO|TIPO\s*DE\s*DISPOSITIVO|TIPO\s*DISPOSITIVO|TIPO\s*DE\s*EQUIPO|TIPO\s*EQUIPO|DEVICE\s*TYPE)\b/
     );
 
     const statusName = getValue(
       [
+        'ESTADO',
         'ESTADO DEL DISPOSITIVO',
         'ESTADO DISPOSITIVO',
         'ESTADO DEL EQUIPO',
-        'ESTADO',
         'STATUS',
         'SITUACION',
       ],
       /\b(?:ESTADO|STATUS|SITUACION)\b/
+    );
+
+    const assignedName = getValue(
+      [
+        'NOMBRE',
+        'NOMBRE_ASIGNADO',
+        'NOMBRE ASIGNADO',
+        'NOMBRE DEL DISPOSITIVO',
+        'NOMBRE DISPOSITIVO',
+        'NOMBRE DEL EQUIPO',
+        'NOMBRE EQUIPO',
+        'DISPOSITIVO',
+        'EQUIPO',
+        'HOSTNAME',
+        'ASIGNADO',
+        'ELEMENTO',
+      ],
+      /\b(?:NOMBRE_ASIGNADO|NOMBRE\s*ASIGNADO|NOMBRE\s*DISPOSITIVO|NOMBRE\s*EQUIPO|HOSTNAME)\b/
     );
 
     const brand = getValue(
@@ -146,6 +149,7 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
 
     const serialNumber = getValue(
       [
+        'NUMERO_SERIE',
         'NUMERO DE SERIE',
         'NUMERO SERIE',
         'N SERIE',
@@ -157,22 +161,23 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
         'S N',
         'SN',
       ],
-      /\b(?:NUMERO\s*DE\s*SERIE|NUMERO\s*SERIE|SERIAL\s*NUMBER|S\s*N|SN|SERIE)\b/
+      /\b(?:NUMERO_SERIE|NUMERO\s*DE\s*SERIE|NUMERO\s*SERIE|SERIAL\s*NUMBER|S\s*N|SN|SERIE)\b/
     );
 
     const ipAddress = getValue(
-      ['DIRECCION IP', 'DIR IP', 'IP ADDRESS', 'IP', 'DIRECCION DE RED'],
+      ['IP', 'DIRECCION IP', 'DIR IP', 'IP_ADDRESS', 'IP ADDRESS', 'DIRECCION DE RED'],
       /\b(?:DIRECCION\s*IP|DIR\s*IP|IP\s*ADDRESS|^IP$)\b/
     );
 
     const subnetMask = getValue(
       [
+        'MASCARA',
+        'MÁSCARA',
+        'MASCARA_DE_SUBRED',
         'MASCARA DE SUBRED',
         'MÁSCARA DE SUBRED',
         'MASCARA SUBRED',
         'MÁSCARA SUBRED',
-        'MASCARA',
-        'MÁSCARA',
         'SUBNET MASK',
         'NETMASK',
         'MASK',
@@ -182,91 +187,94 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
 
     const gateway = getValue(
       [
+        'PUERTA_ENLACE',
         'PUERTA DE ENLACE',
         'PUERTA ENLACE',
-        'PUERTA DE ENLACE GATEWAY',
         'GATEWAY',
-        'PUERTA_ENLACE',
+        'PUERTA DE ENLACE GATEWAY',
         'DEFAULT GATEWAY',
         'GW',
       ],
-      /\b(?:PUERTA\s*(?:DE\s*)?ENLACE|DEFAULT\s*GATEWAY|^GATEWAY$|^GW$)\b/
+      /\b(?:PUERTA_ENLACE|PUERTA\s*(?:DE\s*)?ENLACE|DEFAULT\s*GATEWAY|^GATEWAY$|^GW$)\b/
     );
 
     const macAddress = getValue(
-      ['DIRECCION MAC', 'DIR MAC', 'MAC ADDRESS', 'MAC', 'DIRECCION FISICA'],
+      ['MAC', 'DIRECCION MAC', 'DIR MAC', 'MAC_ADDRESS', 'MAC ADDRESS', 'DIRECCION FISICA'],
       /\b(?:DIRECCION\s*MAC|DIR\s*MAC|MAC\s*ADDRESS|^MAC$)\b/
     );
 
     const rackCabinet = getValue(
-      ['ARMARIO RACK', 'ARMARIO', 'RACK', 'GABINETE', 'CABINET', 'UBICACION RACK'],
+      ['RACK', 'ARMARIO RACK', 'ARMARIO', 'GABINETE', 'CABINET', 'UBICACION RACK'],
       /\b(?:ARMARIO\s*RACK|ARMARIO|RACK|GABINETE|CABINET)\b/
-    );
-
-    const switchPort = getValue(
-      [
-        'SWITCH PUERTO',
-        'PUERTO SWITCH',
-        'PUERTO EN SWITCH',
-        'PUERTO DEL SWITCH',
-        'SWITCH PORT',
-        'PORT SWITCH',
-        'BOCA SWITCH',
-        'BOCA',
-        'PUERTO',
-        'PORT',
-      ],
-      /\b(?:SWITCH\s*PUERTO|PUERTO\s*SWITCH|PUERTO\s*EN\s*SWITCH|BOCA)\b/
     );
 
     const switchName = getValue(
       [
+        'SWITCH',
         'REFERENCIA SWITCH',
         'REF SWITCH',
         'NOMBRE SWITCH',
         'SWITCH REF',
         'SWITCH NOMBRE',
         'SWITCH NAME',
-        'SWITCH',
         'CONMUTADOR',
       ],
       /\b(?:REFERENCIA\s*SWITCH|REF\s*SWITCH|NOMBRE\s*SWITCH|SWITCH\s*REF|^SWITCH$)\b/
     );
 
-    const communicationPorts = getValue(
+    const switchPort = getValue(
       [
-        'PUERTOS DE COMUNICACION',
-        'PUERTOS COMUNICACION',
-        'PUERTOS DE RED',
-        'PUERTOS SERVICIO',
-        'PUERTOS',
-        'PORTS',
+        'SWITCH_PUERTO',
+        'SWITCH PUERTO',
+        'PUERTO SWITCH',
+        'PUERTO_SWITCH',
+        'PUERTO EN SWITCH',
+        'PUERTO DEL SWITCH',
+        'SWITCH PORT',
+        'PORT SWITCH',
+        'BOCA SWITCH',
+        'BOCA',
       ],
-      /\b(?:PUERTOS\s*DE\s*COMUNICACION|PUERTOS\s*COMUNICACION|PUERTOS)\b/
+      /\b(?:SWITCH_PUERTO|SWITCH\s*PUERTO|PUERTO\s*SWITCH|PUERTO\s*EN\s*SWITCH|BOCA)\b/
     );
+
+    const credTitle =
+      getValue(
+        [
+          'USUARIO_DESCRIPCION',
+          'USUARIO DESCRIPCION',
+          'DESCRIPCION USUARIO',
+          'ETIQUETA CREDENCIAL',
+          'TIPO CREDENCIAL',
+          'TITULO CREDENCIAL',
+          'ETIQUETA',
+          'CREDENCIAL',
+        ],
+        /\b(?:USUARIO_DESCRIPCION|USUARIO\s*DESCRIPCION|ETIQUETA\s*CREDENCIAL|TIPO\s*CREDENCIAL|ETIQUETA)\b/
+      ) || 'ACCESO WEB';
 
     const username = getValue(
       [
-        'USUARIO CREDENCIAL',
-        'USUARIO DE ACCESO',
-        'USUARIO ACCESO',
         'USUARIO',
         'USER',
         'USERNAME',
+        'USUARIO CREDENCIAL',
+        'USUARIO DE ACCESO',
+        'USUARIO ACCESO',
         'LOGIN',
         'CREDENCIAL USUARIO',
       ],
-      /\b(?:USUARIO\s*CREDENCIAL|USUARIO\s*ACCESO|USERNAME|USUARIO)\b/
+      /\b(?:USUARIO\s*CREDENCIAL|USUARIO\s*ACCESO|USERNAME|^USUARIO$|^USER$)\b/
     );
 
     const password = getValue(
       [
+        'CONTRASEÑA',
+        'CONTRASENA',
         'CONTRASEÑA CREDENCIAL',
         'CONTRASENA CREDENCIAL',
         'CONTRASEÑA DE ACCESO',
         'CONTRASENA DE ACCESO',
-        'CONTRASEÑA',
-        'CONTRASENA',
         'PASSWORD',
         'PASS',
         'CLAVE',
@@ -275,11 +283,45 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
       /\b(?:CONTRASE[NÑ]A|PASSWORD|CLAVE|PWD)\b/
     );
 
-    const credTitle =
-      getValue(
-        ['ETIQUETA CREDENCIAL', 'TIPO CREDENCIAL', 'TITULO CREDENCIAL', 'ETIQUETA', 'CREDENCIAL'],
-        /\b(?:ETIQUETA\s*CREDENCIAL|TIPO\s*CREDENCIAL|ETIQUETA)\b/
-      ) || 'ACCESO WEB';
+    const portRaw = getValue(
+      [
+        'PUERTO',
+        'PUERTOS',
+        'PORT',
+        'PORTS',
+        'PUERTOS DE COMUNICACION',
+        'PUERTOS COMUNICACION',
+        'PUERTOS DE RED',
+        'PUERTOS SERVICIO',
+      ],
+      /\b(?:PUERTOS\s*DE\s*COMUNICACION|PUERTOS\s*COMUNICACION|PUERTOS|^PUERTO$|^PORT$)\b/
+    );
+
+    const portNameRaw = getValue(
+      [
+        'PUERTO_NOMBRE',
+        'PUERTO NOMBRE',
+        'NOMBRE PUERTO',
+        'SERVICIO PUERTO',
+        'SERVICIO',
+        'PROTOCOLO',
+        'PORT NAME',
+      ],
+      /\b(?:PUERTO_NOMBRE|PUERTO\s*NOMBRE|NOMBRE\s*PUERTO|SERVICIO|PROTOCOLO)\b/
+    );
+
+    let communicationPorts: string | undefined = undefined;
+    if (portRaw && portNameRaw) {
+      const pList = portRaw.split(',').map((s) => s.trim()).filter(Boolean);
+      const nList = portNameRaw.split(',').map((s) => s.trim()).filter(Boolean);
+      if (pList.length > 1 && nList.length === pList.length) {
+        communicationPorts = pList.map((p, idx) => `${p} (${nList[idx]})`).join(', ');
+      } else {
+        communicationPorts = `${portRaw} (${portNameRaw})`;
+      }
+    } else if (portRaw) {
+      communicationPorts = portRaw;
+    }
 
     const notes = getValue(
       ['NOTAS', 'OBSERVACIONES', 'COMENTARIOS', 'DESCRIPCION', 'NOTES', 'COMMENTS'],
