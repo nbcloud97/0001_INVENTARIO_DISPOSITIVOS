@@ -1,12 +1,11 @@
 import { PrismaClient } from '@prisma/client';
-import { encryptCredentials } from '../services/cryptoService';
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Inicializando datos semilla (Seeding con campos de Cliente actualizados)...');
+  console.log('🌱 Inicializando catálogos base (Subsistemas, Tipos de Dispositivo y Estados)...');
 
-  // 1. Crear Subsistemas por defecto
+  // 1. Crear / actualizar Subsistemas por defecto
   const subsystemsData = [
     { name: 'Red', color: '#0284c7', icon: 'network', description: 'Switches, routers, puntos de acceso y latiguillos' },
     { name: 'CCTV', color: '#dc2626', icon: 'camera', description: 'Grabadores NVR/DVR, cámaras IP domo/bullet y codificadores' },
@@ -25,7 +24,7 @@ async function main() {
     subsystemsMap.set(sub.name, created.id);
   }
 
-  // 1.5. Crear Tipos de Dispositivo por defecto para cada subsistema
+  // 2. Crear Tipos de Dispositivo por defecto para cada subsistema
   const deviceTypesData = [
     { name: 'Switch PoE', subsystemId: subsystemsMap.get('Red') },
     { name: 'Router', subsystemId: subsystemsMap.get('Red') },
@@ -45,15 +44,26 @@ async function main() {
     { name: 'Detector volumétrico', subsystemId: subsystemsMap.get('Intrusión / Alarma') },
   ];
 
-  const deviceTypesMap = new Map();
   for (const dt of deviceTypesData) {
-    const created = await prisma.deviceType.create({
-      data: dt,
+    if (!dt.subsystemId) continue;
+    const existing = await prisma.deviceType.findFirst({
+      where: {
+        name: dt.name,
+        subsystemId: dt.subsystemId,
+      },
     });
-    deviceTypesMap.set(dt.name, created.id);
+
+    if (!existing) {
+      await prisma.deviceType.create({
+        data: {
+          name: dt.name,
+          subsystemId: dt.subsystemId,
+        },
+      });
+    }
   }
 
-  // 1.8. Crear Estados de Dispositivo por defecto
+  // 3. Crear Estados de Dispositivo por defecto
   const statusesData = [
     { name: 'Operativo', color: '#10b981', description: 'Dispositivo funcionando correctamente en producción' },
     { name: 'Falta instalación', color: '#f59e0b', description: 'Pendiente de montaje, cableado o configuración' },
@@ -69,116 +79,7 @@ async function main() {
     });
   }
 
-  // 2. Crear Cliente de Prueba 1 con los campos requeridos (Nombre comercial, Nombre fiscal, NIF, ID Manual, notas)
-  const client1 = await prisma.client.create({
-    data: {
-      name: 'Hospital La Paz',                              // Nombre Comercial (Obligatorio)
-      legalName: 'Hospital Universitario de la Paz, S.A.', // Nombre Fiscal
-      cif: 'A12345678',                                     // NIF
-      manualId: '345',                                      // ID Manual
-      notes: 'Instalación de seguridad iniciada en Q3 2026. Armario Rack en Planta -1.',
-    },
-  });
-
-  // 3. Crear Cliente de Prueba 2
-  const client2 = await prisma.client.create({
-    data: {
-      name: 'Centro Comercial Gran Plaza',
-      legalName: 'Gran Plaza Retail Inversiones S.L.U.',
-      cif: 'B98765432',
-      manualId: '682',
-      notes: 'Revisión trimestral de switches PoE.',
-    },
-  });
-
-  // 4. Crear Sistemas para Cliente 1
-  const system1_CCTV = await prisma.system.create({
-    data: {
-      name: 'Sistema CCTV Urgencias & Pasillos',
-      code: 'SYS-CCTV-01',
-      description: 'Grabación de video en 4K pasillos de urgencias y accesos',
-      clientId: client1.id,
-      subsystemId: subsystemsMap.get('CCTV'),
-    },
-  });
-
-  const system1_Red = await prisma.system.create({
-    data: {
-      name: 'Sistema de Red & Switches Core',
-      code: 'SYS-NET-01',
-      description: 'Infraestructura de switches PoE y enlaces de fibra',
-      clientId: client1.id,
-      subsystemId: subsystemsMap.get('Red'),
-    },
-  });
-
-  // 5. Crear Dispositivos para Sistema CCTV de Cliente 1
-  await prisma.device.create({
-    data: {
-      systemId: system1_CCTV.id,
-      clientId: client1.id,
-      subsystemId: subsystemsMap.get('CCTV'),
-      deviceTypeId: deviceTypesMap.get('Grabadora NVR'),
-      brand: 'Hikvision',
-      model: 'DS-9664NI-I8',
-      serialNumber: 'HKV-NVR-20260901-X',
-      assignedName: 'NVR_PRINCIPAL_64CH',
-      ipAddress: '192.168.1.10',
-      macAddress: '70:B3:D5:11:22:33',
-      credentialsEncrypted: encryptCredentials({ username: 'admin', password: 'PasswordSeguro2026!' }),
-      rackCabinet: 'Rack R1 - CPD Planta -1',
-      switchName: 'SW-CORE-01',
-      switchPort: 'Port 01 (Gi1/0/1)',
-      notes: 'Grabador principal 64 canales con 8 Discos duros de 10TB en RAID 5.',
-    },
-  });
-
-  // Dispositivos masivos de cámaras en Sistema CCTV
-  const camerasToCreate = [];
-  for (let i = 1; i <= 20; i++) {
-    const num = i < 10 ? `0${i}` : `${i}`;
-    camerasToCreate.push({
-      systemId: system1_CCTV.id,
-      clientId: client1.id,
-      subsystemId: subsystemsMap.get('CCTV'),
-      deviceTypeId: deviceTypesMap.get('Cámara de vídeo'),
-      brand: 'Hikvision',
-      model: 'DS-2CD2143G0-I',
-      serialNumber: `HKV-CAM-2026-${num}`,
-      assignedName: `CAM_URGENCIAS_${num}`,
-      ipAddress: `192.168.1.${100 + i}`,
-      macAddress: `00:1A:2B:3C:4D:${num}`,
-      credentialsEncrypted: encryptCredentials({ username: 'admin', password: 'CamPassword2026!' }),
-      rackCabinet: 'Rack R1 - CPD Planta -1',
-      switchName: 'SW-POE-CORE-R1',
-      switchPort: `Port ${i}`,
-      notes: `Cámara domo 4MP Urgencias Pasillo ${num}`,
-    });
-  }
-  await prisma.device.createMany({ data: camerasToCreate });
-
-  // 6. Crear Dispositivo en Sistema de Red
-  await prisma.device.create({
-    data: {
-      systemId: system1_Red.id,
-      clientId: client1.id,
-      subsystemId: subsystemsMap.get('Red'),
-      deviceTypeId: deviceTypesMap.get('Switch PoE'),
-      brand: 'Cisco',
-      model: 'Catalyst C9200-24P',
-      serialNumber: 'FCW2435X001',
-      assignedName: 'SW-POE-CORE-R1',
-      ipAddress: '192.168.1.2',
-      macAddress: '00:27:0D:A1:B2:C3',
-      credentialsEncrypted: encryptCredentials({ username: 'cisco_admin', password: 'CiscoAdmin#2026' }),
-      rackCabinet: 'Rack R1 - CPD Planta -1',
-      switchName: 'SW-CORE-01',
-      switchPort: 'Uplink SFP 10G',
-      notes: 'Switch gestionado 24 puertos PoE+ 370W.',
-    },
-  });
-
-  console.log('✅ Semilla cargada con éxito: 5 subsistemas, 2 clientes, 2 sistemas y 22 dispositivos integrados.');
+  console.log('✅ Catálogos base inicializados correctamente.');
 }
 
 main()

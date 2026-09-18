@@ -10,6 +10,7 @@ const systemSchema = z.object({
   notes: z.string().optional(),
   clientId: z.string().min(1, 'El cliente asociado es obligatorio'),
   subsystemId: z.string().optional(),
+  isArchived: z.boolean().optional(),
 });
 
 export class SystemController {

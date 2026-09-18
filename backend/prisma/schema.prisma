@@ -14,22 +14,26 @@ model User {
   passwordHash String
   name         String?
   role         String   @default("ADMIN")
+  permissions  String?  // JSON Array con los permisos: ["VIEW_INVENTORY", "EDIT_INVENTORY", ...]
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 }
 
 model Client {
-  id        String   @id @default(uuid())
-  name      String   // Nombre Comercial (Obligatorio)
-  legalName String?  // Nombre Fiscal
-  cif       String?  // NIF
-  manualId  String?  // ID Manual
-  notes     String?  // Notas
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id         String   @id @default(uuid())
+  name       String   // Nombre Comercial (Obligatorio)
+  legalName  String?  // Nombre Fiscal
+  cif        String?  // NIF
+  manualId   String?  // ID Manual
+  notes      String?  // Notas
+  isArchived Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   systems System[]
   devices Device[]
+
+  @@index([isArchived])
 }
 
 model Subsystem {
@@ -70,6 +74,7 @@ model System {
   client      Client     @relation(fields: [clientId], references: [id], onDelete: Cascade)
   subsystemId String?
   subsystem   Subsystem? @relation(fields: [subsystemId], references: [id])
+  isArchived  Boolean    @default(false)
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
@@ -79,6 +84,7 @@ model System {
 
   @@index([clientId])
   @@index([subsystemId])
+  @@index([isArchived])
 }
 
 model SystemNote {

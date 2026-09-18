@@ -7,8 +7,6 @@ until npx prisma db push --skip-generate; do
   sleep 2
 done
 
-echo "🌱 Verificando inicialización de datos por defecto (seeding)..."
-npx ts-node src/prisma/seed.ts || true
-
 echo "🚀 Arrancando servidor Backend..."
 exec node dist/index.js
+

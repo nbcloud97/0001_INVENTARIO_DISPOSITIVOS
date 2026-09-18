@@ -28,6 +28,11 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgrespassword}@postgres:5432/${POSTGRES_DB:-inventario_db}?schema=public
       JWT_SECRET: ${JWT_SECRET:-supersecret_jwt_key_inventario_2026}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:-0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef}
+      ORACLE_HOST: ${ORACLE_HOST:-172.16.90.20}
+      ORACLE_PORT: ${ORACLE_PORT:-1521}
+      ORACLE_SERVICE_NAME: ${ORACLE_SERVICE_NAME:-BETA10}
+      ORACLE_USER: ${ORACLE_USER:-satya_only_reader}
+      ORACLE_PASSWORD: ${ORACLE_PASSWORD:-CA36linGqrLbRG0HLR7FxU2}
     ports:
       - "${BACKEND_PORT:-3001}:${BACKEND_PORT:-3001}"
     volumes:

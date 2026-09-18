@@ -20,10 +20,25 @@ const storage = multer.diskStorage({
   },
 });
 
+const ALLOWED_EXTENSIONS = new Set([
+  '.pdf', '.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg',
+  '.doc', '.docx', '.xls', '.xlsx', '.csv', '.txt',
+  '.dwg', '.dxf', '.zip', '.rar', '.7z'
+]);
+
 export const uploadMiddleware = multer({
   storage,
   limits: { fileSize: 50 * 1024 * 1024 }, // Límite de 50MB por archivo
+  fileFilter: (_req: any, file: any, cb: any) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (ALLOWED_EXTENSIONS.has(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error(`Tipo de archivo no permitido (${ext}). Se permiten documentos (PDF, Office), imágenes, planos (DWG/DXF) y archivos comprimidos.`));
+    }
+  },
 }).single('file');
+
 
 export class SystemAttachmentController {
   static async getBySystemId(req: Request, res: Response) {

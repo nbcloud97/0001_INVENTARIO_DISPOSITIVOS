@@ -4,6 +4,17 @@ import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'antigravity-secret-key-inventario-2026';
 
+export const ALL_PERMISSIONS = [
+  'VIEW_INVENTORY',
+  'EDIT_INVENTORY',
+  'DELETE_RECORDS',
+  'VIEW_PASSWORDS',
+  'BETA10_IMPORT',
+  'MANAGE_TYPES',
+  'MANAGE_USERS',
+  'MANAGE_BACKUPS',
+];
+
 export interface LoginInput {
   username: string;
   password: string;
@@ -17,20 +28,37 @@ export class AuthService {
     try {
       const adminCount = await prisma.user.count();
       if (adminCount === 0) {
-        const passwordHash = await bcrypt.hash('admin', 10);
+        const defaultPassword = process.env.ADMIN_DEFAULT_PASSWORD || 'admin123';
+        const passwordHash = await bcrypt.hash(defaultPassword, 10);
         await prisma.user.create({
           data: {
             username: 'ADMIN',
             passwordHash,
             name: 'Administrador',
             role: 'ADMIN',
+            permissions: JSON.stringify(ALL_PERMISSIONS),
           },
         });
-        console.log('🔑 Usuario administrador inicial creado: [Usuario: admin, Contraseña: admin]');
+        console.log(`🔑 Usuario administrador inicial creado: [Usuario: admin, Contraseña: ${defaultPassword}]`);
       }
     } catch (error) {
       console.error('Error al inicializar usuario admin por defecto:', error);
     }
+  }
+
+  static parsePermissions(role: string, rawPermissions?: string | null): string[] {
+    if (rawPermissions) {
+      try {
+        const parsed = JSON.parse(rawPermissions);
+        if (Array.isArray(parsed)) return parsed;
+      } catch (e) {
+        // Fallback
+      }
+    }
+    if (role === 'ADMIN') {
+      return ALL_PERMISSIONS;
+    }
+    return ['VIEW_INVENTORY'];
   }
 
   static async login({ username, password }: LoginInput) {
@@ -54,12 +82,15 @@ export class AuthService {
       throw new Error('Usuario o contraseña incorrectos');
     }
 
+    const permissions = AuthService.parsePermissions(user.role, user.permissions);
+
     // Generar Token JWT con vigencia de 7 días
     const token = jwt.sign(
       {
         userId: user.id,
         username: user.username,
         role: user.role,
+        permissions,
       },
       JWT_SECRET,
       { expiresIn: '7d' }
@@ -72,6 +103,7 @@ export class AuthService {
         username: user.username,
         name: user.name || user.username,
         role: user.role,
+        permissions,
       },
     };
   }
@@ -81,9 +113,16 @@ export class AuthService {
       const decoded = jwt.verify(token, JWT_SECRET) as any;
       const user = await prisma.user.findUnique({
         where: { id: decoded.userId },
-        select: { id: true, username: true, name: true, role: true },
+        select: { id: true, username: true, name: true, role: true, permissions: true },
       });
-      return user;
+      if (!user) return null;
+      return {
+        id: user.id,
+        username: user.username,
+        name: user.name,
+        role: user.role,
+        permissions: AuthService.parsePermissions(user.role, user.permissions),
+      };
     } catch {
       return null;
     }

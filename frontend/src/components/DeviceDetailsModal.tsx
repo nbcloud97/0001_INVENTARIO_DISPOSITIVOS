@@ -20,14 +20,15 @@ import {
   PhoneCall,
   Shield
 } from 'lucide-react';
-import { Device, DeviceCredentialItem } from '../types';
-import { api } from '../services/api';
+import { Device, DeviceCredentialItem, hasPermission } from '../types';
+import { api, UserProfile } from '../services/api';
 
 interface DeviceDetailsModalProps {
   isOpen: boolean;
   onClose: () => void;
   device: Device | null;
   onEditDevice?: (device: Device) => void;
+  currentUser?: UserProfile | null;
 }
 
 export const DeviceDetailsModal: React.FC<DeviceDetailsModalProps> = ({
@@ -35,7 +36,9 @@ export const DeviceDetailsModal: React.FC<DeviceDetailsModalProps> = ({
   onClose,
   device,
   onEditDevice,
+  currentUser,
 }) => {
+  const canViewPasswords = hasPermission(currentUser, 'VIEW_PASSWORDS');
   const [credentialsList, setCredentialsList] = useState<DeviceCredentialItem[]>([]);
   const [loadingCreds, setLoadingCreds] = useState(false);
   const [showPasswordMap, setShowPasswordMap] = useState<Record<number, boolean>>({});
@@ -462,29 +465,37 @@ export const DeviceDetailsModal: React.FC<DeviceDetailsModalProps> = ({
                         <div>
                           <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 700, display: 'block' }}>CONTRASE&Ntilde;A</span>
                           <span className="code-font" style={{ fontSize: '0.875rem' }}>
-                            {showPasswordMap[idx] ? cred.password : '••••••••••••'}
+                            {canViewPasswords
+                              ? (showPasswordMap[idx] ? cred.password : '••••••••••••')
+                              : '•••••••••••• (Protegida)'}
                           </span>
                         </div>
-                        <div style={{ display: 'flex', gap: '0.25rem' }}>
-                          <button
-                            className="btn btn-secondary btn-icon"
-                            style={{ padding: '0.2rem 0.4rem' }}
-                            title={showPasswordMap[idx] ? 'Ocultar' : 'Mostrar'}
-                            onClick={() => toggleShowPassword(idx)}
-                          >
-                            {showPasswordMap[idx] ? <EyeOff size={13} /> : <Eye size={13} />}
-                          </button>
-                          {cred.password && (
+                        {canViewPasswords ? (
+                          <div style={{ display: 'flex', gap: '0.25rem' }}>
                             <button
                               className="btn btn-secondary btn-icon"
                               style={{ padding: '0.2rem 0.4rem' }}
-                              title="Copiar contraseña"
-                              onClick={() => copyToClipboard(cred.password!, `p_${idx}`)}
+                              title={showPasswordMap[idx] ? 'Ocultar' : 'Mostrar'}
+                              onClick={() => toggleShowPassword(idx)}
                             >
-                              {copiedField === `p_${idx}` ? <Check size={13} color="var(--accent-emerald)" /> : <Copy size={13} />}
+                              {showPasswordMap[idx] ? <EyeOff size={13} /> : <Eye size={13} />}
                             </button>
-                          )}
-                        </div>
+                            {cred.password && (
+                              <button
+                                className="btn btn-secondary btn-icon"
+                                style={{ padding: '0.2rem 0.4rem' }}
+                                title="Copiar contraseña"
+                                onClick={() => copyToClipboard(cred.password!, `p_${idx}`)}
+                              >
+                                {copiedField === `p_${idx}` ? <Check size={13} color="var(--accent-emerald)" /> : <Copy size={13} />}
+                              </button>
+                            )}
+                          </div>
+                        ) : (
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: '0.25rem' }}>
+                            <Shield size={12} /> Requiere permiso
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>

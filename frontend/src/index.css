@@ -588,13 +588,37 @@ select option {
     min-width: 100%;
   }
 
-  .btn {
+  .toolbar > .btn,
+  .modal-footer .btn:not(.btn-icon) {
     width: 100%;
+  }
+
+  .btn-icon {
+    width: auto !important;
   }
 
   .form-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* Scrollbars Minimalistas */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-highlight);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
 }
 
 @keyframes fadeIn {

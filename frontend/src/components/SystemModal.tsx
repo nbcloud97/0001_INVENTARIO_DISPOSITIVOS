@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Cpu } from 'lucide-react';
+import { X, Cpu, Database } from 'lucide-react';
 import { Client, System } from '../types';
 import { api } from '../services/api';
 
@@ -10,6 +10,7 @@ interface SystemModalProps {
   systemToEdit?: System | null;
   clients: Client[];
   defaultClientId?: string;
+  onOpenBeta10Import?: (clientId?: string) => void;
 }
 
 export const SystemModal: React.FC<SystemModalProps> = ({
@@ -19,12 +20,14 @@ export const SystemModal: React.FC<SystemModalProps> = ({
   systemToEdit,
   clients,
   defaultClientId,
+  onOpenBeta10Import,
 }) => {
   const [formData, setFormData] = useState<Partial<System>>({
     name: '',
     code: '',
     notes: '',
     clientId: defaultClientId || (clients[0]?.id || ''),
+    isArchived: false,
   });
 
   const [loading, setLoading] = useState(false);
@@ -37,6 +40,7 @@ export const SystemModal: React.FC<SystemModalProps> = ({
         code: systemToEdit.code || '',
         notes: systemToEdit.notes || '',
         clientId: systemToEdit.clientId,
+        isArchived: systemToEdit.isArchived || false,
       });
     } else {
       setFormData({
@@ -44,6 +48,7 @@ export const SystemModal: React.FC<SystemModalProps> = ({
         code: '',
         notes: '',
         clientId: defaultClientId || (clients[0]?.id || ''),
+        isArchived: false,
       });
     }
     setError(null);
@@ -99,6 +104,50 @@ export const SystemModal: React.FC<SystemModalProps> = ({
               </div>
             )}
 
+            {/* Banner de acceso rápido a Importación Beta 10 */}
+            {!systemToEdit && onOpenBeta10Import && (
+              <div
+                style={{
+                  background: 'rgba(234, 88, 12, 0.08)',
+                  border: '1px solid rgba(234, 88, 12, 0.25)',
+                  borderRadius: '6px',
+                  padding: '0.75rem 1rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '0.75rem',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <Database size={18} color="#ea580c" />
+                  <div style={{ fontSize: '0.825rem' }}>
+                    <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>¿Consultar sistemas en Beta 10?</span>
+                    <span style={{ display: 'block', color: 'var(--text-secondary)', fontSize: '0.75rem' }}>
+                      Carga los sistemas técnicos registrados para este cliente en Beta 10
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  style={{
+                    fontSize: '0.75rem',
+                    padding: '0.3rem 0.65rem',
+                    color: '#ea580c',
+                    borderColor: 'rgba(234, 88, 12, 0.3)',
+                    whiteSpace: 'nowrap',
+                    fontWeight: 600,
+                  }}
+                  onClick={() => {
+                    onClose();
+                    onOpenBeta10Import(formData.clientId);
+                  }}
+                >
+                  Abrir Beta 10
+                </button>
+              </div>
+            )}
+
             {/* Cliente obligatorio previamente creado */}
             <div className="form-group">
               <label className="form-label">Cliente Asociado *</label>
@@ -149,6 +198,21 @@ export const SystemModal: React.FC<SystemModalProps> = ({
                 value={formData.notes || ''}
                 onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               />
+            </div>
+
+            {/* Estado Archivado */}
+            <div className="form-group" style={{ marginTop: '0.25rem' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.875rem' }}>
+                <input
+                  type="checkbox"
+                  checked={!!formData.isArchived}
+                  onChange={(e) => setFormData({ ...formData, isArchived: e.target.checked })}
+                />
+                <span style={{ fontWeight: 600 }}>Archivar este sistema</span>
+              </label>
+              <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', marginLeft: '1.4rem' }}>
+                Los sistemas archivados se ocultan de la vista de trabajo principal pero conservan todos sus dispositivos.
+              </span>
             </div>
           </div>
 

@@ -2,6 +2,8 @@ import React from 'react';
 import { Server, Users, Settings, Sun, Moon, LogOut, User, BarChart3 } from 'lucide-react';
 import { UserProfile } from '../services/api';
 
+import { hasPermission } from '../types';
+
 interface HeaderProps {
   activeTab: 'clients' | 'reports' | 'config';
   setActiveTab: (tab: 'clients' | 'reports' | 'config') => void;
@@ -19,6 +21,11 @@ export const Header: React.FC<HeaderProps> = ({
   user,
   onLogout,
 }) => {
+  const canViewConfig =
+    hasPermission(user, 'MANAGE_TYPES') ||
+    hasPermission(user, 'MANAGE_USERS') ||
+    hasPermission(user, 'MANAGE_BACKUPS');
+
   return (
     <header className="header">
       <div className="header-inner">
@@ -51,12 +58,14 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <BarChart3 size={15} /> Informes
             </button>
-            <button
-              className={`nav-btn ${activeTab === 'config' ? 'active' : ''}`}
-              onClick={() => setActiveTab('config')}
-            >
-              <Settings size={15} /> Configuración
-            </button>
+            {canViewConfig && (
+              <button
+                className={`nav-btn ${activeTab === 'config' ? 'active' : ''}`}
+                onClick={() => setActiveTab('config')}
+              >
+                <Settings size={15} /> Configuración
+              </button>
+            )}
           </div>
 
           {/* User Profile Info & Logout */}

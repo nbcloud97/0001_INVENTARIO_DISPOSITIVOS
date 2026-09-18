@@ -9,6 +9,7 @@ const clientSchema = z.object({
   cif: z.string().optional(),
   manualId: z.string().optional(),
   notes: z.string().optional(),
+  isArchived: z.boolean().optional(),
 });
 
 export class ClientController {

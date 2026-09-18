@@ -17,6 +17,7 @@ export interface Client {
   cif?: string;        // NIF
   manualId?: string;   // ID Manual
   notes?: string;      // Notas
+  isArchived?: boolean;
   _count?: {
     systems?: number;
     devices: number;
@@ -61,6 +62,7 @@ export interface System {
   };
   subsystemId?: string;
   subsystem?: Subsystem;
+  isArchived?: boolean;
   _count?: {
     devices: number;
     systemNotes?: number;
@@ -191,3 +193,141 @@ export interface CreateDeviceTypeFormData {
   description?: string;
   subsystemId: string;
 }
+
+export interface Beta10SubsystemItem {
+  idsubsis: number;
+  codigo: string | null;
+  descripcion: string;
+  tipoSubsis: string | null;
+  estado: number;
+}
+
+export interface Beta10SystemItem {
+  idsistema: number;
+  codigo: string | null;
+  descripcion: string;
+  tipoSistema: string | null;
+  observaciones: string | null;
+  estado: number;
+  subsystems: Beta10SubsystemItem[];
+  alreadyImported?: boolean;
+  importedSystemId?: string;
+}
+
+export interface Beta10ClientSearchResult {
+  idcliente: number;
+  nombre: string;
+  razonSocial: string | null;
+  cif: string | null;
+  observaciones: string | null;
+  estado: number;
+  totalSistemas: number;
+}
+
+export interface Beta10ClientDetails {
+  idcliente: number;
+  nombre: string;
+  razonSocial: string | null;
+  cif: string | null;
+  observaciones: string | null;
+  estado: number;
+  systems: Beta10SystemItem[];
+  alreadyImportedClient?: boolean;
+  importedClientId?: string;
+}
+
+export interface Beta10ImportResult {
+  message: string;
+  client: Client;
+  createdSystemsCount: number;
+  updatedSystemsCount: number;
+  totalSystemsSelected: number;
+}
+
+export type PermissionKey =
+  | 'VIEW_INVENTORY'
+  | 'EDIT_INVENTORY'
+  | 'DELETE_RECORDS'
+  | 'VIEW_PASSWORDS'
+  | 'BETA10_IMPORT'
+  | 'MANAGE_TYPES'
+  | 'MANAGE_USERS'
+  | 'MANAGE_BACKUPS';
+
+export interface PermissionDefinition {
+  key: PermissionKey;
+  label: string;
+  description: string;
+}
+
+export const AVAILABLE_PERMISSIONS: PermissionDefinition[] = [
+  {
+    key: 'VIEW_INVENTORY',
+    label: 'Ver Inventario',
+    description: 'Acceso para consultar clientes, sistemas, dispositivos e informes',
+  },
+  {
+    key: 'EDIT_INVENTORY',
+    label: 'Crear / Editar Inventario',
+    description: 'Crear y modificar clientes, sistemas, dispositivos, notas y adjuntos',
+  },
+  {
+    key: 'DELETE_RECORDS',
+    label: 'Eliminar Registros',
+    description: 'Permiso para borrar clientes, sistemas, dispositivos y adjuntos',
+  },
+  {
+    key: 'VIEW_PASSWORDS',
+    label: 'Ver Contraseñas Cifradas',
+    description: 'Descifrar y ver contraseñas en credenciales de dispositivos',
+  },
+  {
+    key: 'BETA10_IMPORT',
+    label: 'Importar desde Beta 10',
+    description: 'Búsqueda e importación directa de clientes y sistemas desde ERP Oracle',
+  },
+  {
+    key: 'MANAGE_TYPES',
+    label: 'Gestionar Catálogos',
+    description: 'Administrar tipos de dispositivo, subsistemas y estados',
+  },
+  {
+    key: 'MANAGE_USERS',
+    label: 'Gestionar Usuarios',
+    description: 'Crear, modificar y asignar permisos a cuentas de acceso',
+  },
+  {
+    key: 'MANAGE_BACKUPS',
+    label: 'Copias de Seguridad',
+    description: 'Exportar y restaurar copias de seguridad de la base de datos',
+  },
+];
+
+export function hasPermission(
+  user: { role?: string; permissions?: string[] } | null | undefined,
+  perm: PermissionKey | string
+): boolean {
+  if (!user) return false;
+  if (user.role === 'ADMIN') return true;
+  return Array.isArray(user.permissions) && user.permissions.includes(perm);
+}
+
+export interface UserItem {
+  id: string;
+  username: string;
+  name: string;
+  role: string;
+  permissions?: string[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateUserData {
+  username: string;
+  name?: string;
+  password?: string;
+  role?: string;
+  permissions?: string[];
+}
+
+

@@ -1,4 +1,23 @@
-import { Client, Subsystem, System, Device, CreateDeviceFormData, BulkDeviceFormData, DeviceCredentialItem, SystemNote, SystemAttachment, DeviceType, CreateDeviceTypeFormData, DeviceStatus } from '../types';
+import {
+  Client,
+  Subsystem,
+  System,
+  Device,
+  CreateDeviceFormData,
+  BulkDeviceFormData,
+  DeviceCredentialItem,
+  SystemNote,
+  SystemAttachment,
+  DeviceType,
+  CreateDeviceTypeFormData,
+  DeviceStatus,
+  Beta10ClientSearchResult,
+  Beta10ClientDetails,
+  Beta10ImportResult,
+  UserItem,
+  CreateUserData,
+} from '../types';
+
 
 const API_BASE = '/api/v1';
 
@@ -7,6 +26,7 @@ export interface UserProfile {
   username: string;
   name: string;
   role: string;
+  permissions?: string[];
 }
 
 export interface AuthResponse {
@@ -60,6 +80,7 @@ export const api = {
   getClientById: (id: string) => fetchJson<Client>(`/clients/${id}`),
   createClient: (data: Partial<Client>) => fetchJson<Client>('/clients', { method: 'POST', body: JSON.stringify(data) }),
   updateClient: (id: string, data: Partial<Client>) => fetchJson<Client>(`/clients/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  archiveClient: (id: string, isArchived: boolean) => fetchJson<Client>(`/clients/${id}`, { method: 'PUT', body: JSON.stringify({ isArchived }) }),
   deleteClient: (id: string) => fetchJson<{ message: string }>(`/clients/${id}`, { method: 'DELETE' }),
 
   // Subsistemas
@@ -90,6 +111,7 @@ export const api = {
   getSystemById: (id: string) => fetchJson<System>(`/systems/${id}`),
   createSystem: (data: Partial<System>) => fetchJson<System>('/systems', { method: 'POST', body: JSON.stringify(data) }),
   updateSystem: (id: string, data: Partial<System>) => fetchJson<System>(`/systems/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  archiveSystem: (id: string, isArchived: boolean) => fetchJson<System>(`/systems/${id}`, { method: 'PUT', body: JSON.stringify({ isArchived }) }),
   deleteSystem: (id: string) => fetchJson<{ message: string }>(`/systems/${id}`, { method: 'DELETE' }),
 
   // Notas de Sistema
@@ -128,8 +150,15 @@ export const api = {
     return data.data;
   },
 
-  getAttachmentDownloadUrl: (attachmentId: string) => `${API_BASE}/systems/attachments/${attachmentId}/download`,
-  getAttachmentPreviewUrl: (attachmentId: string) => `${API_BASE}/systems/attachments/${attachmentId}/preview`,
+  getAttachmentDownloadUrl: (attachmentId: string) => {
+    const token = localStorage.getItem('auth_token');
+    return `${API_BASE}/systems/attachments/${attachmentId}/download${token ? `?token=${encodeURIComponent(token)}` : ''}`;
+  },
+  getAttachmentPreviewUrl: (attachmentId: string) => {
+    const token = localStorage.getItem('auth_token');
+    return `${API_BASE}/systems/attachments/${attachmentId}/preview${token ? `?token=${encodeURIComponent(token)}` : ''}`;
+  },
+
 
   getAttachmentBlob: async (attachmentId: string): Promise<Blob> => {
     const token = localStorage.getItem('auth_token');
@@ -190,4 +219,94 @@ export const api = {
     }),
   updateDevice: (id: string, data: Partial<CreateDeviceFormData>) => fetchJson<Device>(`/devices/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteDevice: (id: string) => fetchJson<{ message: string }>(`/devices/${id}`, { method: 'DELETE' }),
+
+  // Integración Beta 10 (Oracle ERP)
+  searchBeta10Clients: (query: string, limit = 50) =>
+    fetchJson<Beta10ClientSearchResult[]>(`/beta10/search?q=${encodeURIComponent(query)}&limit=${limit}`),
+  getBeta10ClientSystems: (idcliente: number) =>
+    fetchJson<Beta10ClientDetails>(`/beta10/clients/${idcliente}/systems`),
+  importBeta10Client: (idcliente: number, selectedSystemIds?: number[]) =>
+    fetchJson<Beta10ImportResult>('/beta10/import', {
+      method: 'POST',
+      body: JSON.stringify({ idcliente, selectedSystemIds }),
+    }),
+
+  // Copias de Seguridad (Backup & Restore)
+  getBackupStats: () =>
+    fetchJson<{
+      clients: number;
+      systems: number;
+      subsystems: number;
+      deviceTypes: number;
+      deviceStatuses: number;
+      devices: number;
+      systemNotes: number;
+      systemAttachments: number;
+    }>('/backup/stats'),
+
+  downloadBackup: async () => {
+    const token = localStorage.getItem('auth_token');
+    const headers: HeadersInit = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    const response = await fetch(`${API_BASE}/backup/export`, {
+      method: 'GET',
+      headers,
+    });
+    if (!response.ok) {
+      throw new Error(`Error al descargar copia de seguridad: ${response.statusText}`);
+    }
+    const blob = await response.blob();
+    const dateStr = new Date().toISOString().split('T')[0];
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `backup_inventario_${dateStr}.json`;
+    document.body.appendChild(a);
+    a.click();
+    window.URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+  },
+
+  restoreBackup: async (file: File) => {
+    const token = localStorage.getItem('auth_token');
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const headers: HeadersInit = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${API_BASE}/backup/restore`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+
+    const data = await response.json();
+    if (!response.ok || !data.success) {
+      throw new Error(data.error || 'Error al restaurar la copia de seguridad');
+    }
+    return data.data;
+  },
+
+  // Gestión de Usuarios
+  getUsers: () => fetchJson<UserItem[]>('/users'),
+  createUser: (data: CreateUserData) =>
+    fetchJson<UserItem>('/users', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  updateUser: (id: string, data: Partial<CreateUserData>) =>
+    fetchJson<UserItem>(`/users/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  deleteUser: (id: string) =>
+    fetchJson<{ message: string }>(`/users/${id}`, {
+      method: 'DELETE',
+    }),
 };
+

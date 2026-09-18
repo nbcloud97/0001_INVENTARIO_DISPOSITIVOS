@@ -418,6 +418,9 @@ export class DeviceService {
 
     const devicesToCreate = [];
 
+    const norm = (str?: string | null) =>
+      str ? str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '') : '';
+
     for (let index = 0; index < items.length; index++) {
       const item = items[index];
 
@@ -442,8 +445,13 @@ export class DeviceService {
           resolvedSubsystemName = found.name;
         }
       } else if (item.subsystemName) {
-        const nameUpper = item.subsystemName.trim().toUpperCase();
-        const found = allSubsystems.find(s => s.name.toUpperCase() === nameUpper);
+        const targetNorm = norm(item.subsystemName);
+        // Coincidencia exacta o normalizada
+        let found = allSubsystems.find(s => norm(s.name) === targetNorm);
+        // Coincidencia por subcadena (ej: "INTRUSIÓN" coincide con "Intrusión / Alarma")
+        if (!found) {
+          found = allSubsystems.find(s => norm(s.name).includes(targetNorm) || targetNorm.includes(norm(s.name)));
+        }
         if (found) {
           resolvedSubsystemId = found.id;
           resolvedSubsystemName = found.name;
@@ -457,31 +465,57 @@ export class DeviceService {
         if (found) resolvedDeviceTypeId = found.id;
       }
       
-      if (!resolvedDeviceTypeId && item.deviceTypeName) {
-        const typeUpper = item.deviceTypeName.trim().toUpperCase();
-        const foundInSubsystem = allDeviceTypes.find(
-          dt => dt.subsystemId === resolvedSubsystemId && dt.name.toUpperCase() === typeUpper
+      if (!resolvedDeviceTypeId && rawTypeName) {
+        const targetTypeNorm = norm(rawTypeName);
+
+        // a) Coincidencia exacta/normalizada dentro del subsistema
+        let found = allDeviceTypes.find(
+          dt => dt.subsystemId === resolvedSubsystemId && norm(dt.name) === targetTypeNorm
         );
-        if (foundInSubsystem) {
-          resolvedDeviceTypeId = foundInSubsystem.id;
-        } else {
-          const foundGlobal = allDeviceTypes.find(dt => dt.name.toUpperCase() === typeUpper);
-          if (foundGlobal) resolvedDeviceTypeId = foundGlobal.id;
+
+        // b) Coincidencia exacta/normalizada global en cualquier subsistema
+        if (!found) {
+          found = allDeviceTypes.find(dt => norm(dt.name) === targetTypeNorm);
+        }
+
+        // c) Coincidencia parcial dentro del subsistema
+        if (!found) {
+          found = allDeviceTypes.find(
+            dt => dt.subsystemId === resolvedSubsystemId && (norm(dt.name).includes(targetTypeNorm) || targetTypeNorm.includes(norm(dt.name)))
+          );
+        }
+
+        // d) Coincidencia parcial global
+        if (!found) {
+          found = allDeviceTypes.find(
+            dt => norm(dt.name).includes(targetTypeNorm) || targetTypeNorm.includes(norm(dt.name))
+          );
+        }
+
+        if (found) {
+          resolvedDeviceTypeId = found.id;
+          // Ajustar también el subsistema si el tipo encontrado pertenece a otro subsistema específico
+          if (found.subsystemId && !item.subsystemName && !item.subsystemId) {
+            resolvedSubsystemId = found.subsystemId;
+          }
         }
       }
 
-      // 4. Si el tipo no está creado en la base de datos, arrojar error
+      // 4. Si el tipo no está creado en la base de datos, arrojar error descriptivo
       if (!resolvedDeviceTypeId) {
         throw new Error(
-          `Error en la fila ${index + 1} (${assignedName}): El tipo de dispositivo "${rawTypeName}" no está creado.`
+          `Error en la fila ${index + 1} (${assignedName}): El tipo de dispositivo "${rawTypeName}" no se encuentra en el catálogo. Por favor, regístralo previamente en Configuración > Catálogo de Tipos.`
         );
       }
 
       // 5. Resolver estado si viene indicado en la fila
       let resolvedStatusId = defaultStatusId;
       if (item.statusName) {
-        const statusUpper = item.statusName.trim().toUpperCase();
-        const foundStatus = allStatuses.find(st => st.name.trim().toUpperCase() === statusUpper);
+        const targetStatusNorm = norm(item.statusName);
+        let foundStatus = allStatuses.find(st => norm(st.name) === targetStatusNorm);
+        if (!foundStatus) {
+          foundStatus = allStatuses.find(st => norm(st.name).includes(targetStatusNorm) || targetStatusNorm.includes(norm(st.name)));
+        }
         if (foundStatus) {
           resolvedStatusId = foundStatus.id;
         }

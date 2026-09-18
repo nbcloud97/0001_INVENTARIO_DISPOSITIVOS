@@ -7,6 +7,7 @@ export interface CreateSystemInput {
   notes?: string;
   clientId: string;
   subsystemId?: string;
+  isArchived?: boolean;
 }
 
 export interface UpdateSystemInput extends Partial<CreateSystemInput> {}

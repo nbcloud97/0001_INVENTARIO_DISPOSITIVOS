@@ -1,11 +1,12 @@
 import { prisma } from '../config/prisma';
 
 export interface CreateClientInput {
-  name: string;      // Nombre Comercial (Obligatorio)
-  legalName?: string; // Nombre Fiscal
-  cif?: string;       // NIF
-  manualId?: string;  // ID Manual
-  notes?: string;     // Notas
+  name: string;       // Nombre Comercial (Obligatorio)
+  legalName?: string;  // Nombre Fiscal
+  cif?: string;        // NIF
+  manualId?: string;   // ID Manual
+  notes?: string;      // Notas
+  isArchived?: boolean;
 }
 
 export interface UpdateClientInput extends Partial<CreateClientInput> {}
@@ -41,9 +42,20 @@ export class ClientService {
   }
 
   static async update(id: string, data: UpdateClientInput) {
-    return prisma.client.update({
-      where: { id },
-      data
+    return prisma.$transaction(async (tx) => {
+      const client = await tx.client.update({
+        where: { id },
+        data,
+      });
+
+      if (typeof data.isArchived === 'boolean') {
+        await tx.system.updateMany({
+          where: { clientId: id },
+          data: { isArchived: data.isArchived },
+        });
+      }
+
+      return client;
     });
   }
 
