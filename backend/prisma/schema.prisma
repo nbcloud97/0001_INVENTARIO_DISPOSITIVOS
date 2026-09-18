@@ -144,6 +144,8 @@ model Device {
   serialNumber         String?
   assignedName         String        // Obligatorio
   ipAddress            String?
+  subnetMask           String?
+  gateway              String?
   macAddress           String?
   credentialsEncrypted String?       // Formato JSON cifrado AES-256-GCM
   communicationPorts   String?       // Formato JSON [{ port: 80, service: 'HTTP' }]

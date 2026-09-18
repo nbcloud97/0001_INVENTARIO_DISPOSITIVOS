@@ -212,13 +212,25 @@ export const api = {
 
   createDevice: (data: CreateDeviceFormData) => fetchJson<Device>('/devices', { method: 'POST', body: JSON.stringify(data) }),
   createBulkDevices: (data: BulkDeviceFormData) => fetchJson<{ count: number; message: string }>('/devices/bulk', { method: 'POST', body: JSON.stringify(data) }),
-  importDevices: (systemId: string, items: any[]) =>
-    fetchJson<{ count: number; message: string }>('/devices/import', {
+  validateImportDevices: (systemId: string, items: any[]) =>
+    fetchJson<{
+      totalDevices: number;
+      hasNewCatalogItems: boolean;
+      newSubsystems: string[];
+      newDeviceTypes: Array<{ name: string; subsystemName: string }>;
+    }>('/devices/import/validate', {
       method: 'POST',
       body: JSON.stringify({ systemId, items }),
     }),
+  importDevices: (systemId: string, items: any[], autoCreateCatalog?: boolean) =>
+    fetchJson<{ count: number; message: string }>('/devices/import', {
+      method: 'POST',
+      body: JSON.stringify({ systemId, items, autoCreateCatalog }),
+    }),
   updateDevice: (id: string, data: Partial<CreateDeviceFormData>) => fetchJson<Device>(`/devices/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteDevice: (id: string) => fetchJson<{ message: string }>(`/devices/${id}`, { method: 'DELETE' }),
+  deleteDevicesBySystem: (systemId: string) =>
+    fetchJson<{ success: boolean; message: string; count: number }>(`/systems/${systemId}/devices`, { method: 'DELETE' }),
 
   // Integración Beta 10 (Oracle ERP)
   searchBeta10Clients: (query: string, limit = 50) =>

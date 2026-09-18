@@ -26,7 +26,7 @@ import { GeneralSettingsView } from './components/GeneralSettingsView';
 import { Client, Subsystem, System, Device, DeviceType, DeviceStatus, hasPermission } from './types';
 import { api, UserProfile } from './services/api';
 import { exportSystemDevicesToExcel } from './utils/excelExport';
-import { ArrowLeft, Building2, Cpu, Layers3, FileSpreadsheet, ChevronDown, Upload, HardDrive, FileText, Paperclip, Edit2, Shield, Tag, Settings } from 'lucide-react';
+import { ArrowLeft, Building2, Cpu, Layers3, FileSpreadsheet, ChevronDown, Upload, HardDrive, FileText, Paperclip, Edit2, Shield, Tag, Settings, Trash2 } from 'lucide-react';
 
 export const App: React.FC = () => {
   // Autenticación State
@@ -131,7 +131,7 @@ export const App: React.FC = () => {
   // Confirmation Warning Modal State
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
-    type: 'client' | 'system' | 'subsystem' | 'device' | 'deviceType' | 'deviceStatus' | null;
+    type: 'client' | 'system' | 'subsystem' | 'device' | 'deviceType' | 'deviceStatus' | 'allDevicesInSystem' | null;
     id: string;
     title: string;
     message: string;
@@ -276,6 +276,23 @@ export const App: React.FC = () => {
     });
   };
 
+  const requestDeleteAllDevices = () => {
+    if (!selectedSystemId || !activeSystem) return;
+    const count = devices.length;
+    if (count === 0) {
+      alert(`El sistema "${activeSystem.name}" no tiene dispositivos registrados para eliminar.`);
+      return;
+    }
+
+    setConfirmModal({
+      isOpen: true,
+      type: 'allDevicesInSystem',
+      id: selectedSystemId,
+      title: 'Eliminar Todos los Dispositivos',
+      message: `¿Estás seguro de que deseas eliminar TODOS los ${count} dispositivo(s) del sistema "${activeSystem.name}"? Esta acción borrará permanentemente todos los equipos de este sistema y no se puede deshacer.`,
+    });
+  };
+
   const requestDeleteDeviceType = (id: string) => {
     const target = deviceTypes.find(dt => dt.id === id);
     const countAssociated = devices.filter(d => d.deviceTypeId === id).length;
@@ -347,6 +364,8 @@ export const App: React.FC = () => {
         await api.deleteSubsystem(id);
       } else if (type === 'device') {
         await api.deleteDevice(id);
+      } else if (type === 'allDevicesInSystem') {
+        await api.deleteDevicesBySystem(id);
       } else if (type === 'deviceType') {
         await api.deleteDeviceType(id);
       } else if (type === 'deviceStatus') {
@@ -557,6 +576,30 @@ export const App: React.FC = () => {
                               }}
                             >
                               <Layers3 size={15} color="var(--accent-purple)" /> Alta masiva
+                            </button>
+
+                            {/* Separador */}
+                            <div style={{ height: '1px', background: 'var(--border-color)', margin: '0.25rem 0' }} />
+
+                            {/* Opción 4: Eliminar todos los dispositivos */}
+                            <button
+                              className="btn"
+                              style={{
+                                background: 'transparent',
+                                border: 'none',
+                                color: '#ef4444',
+                                padding: '0.55rem 1rem',
+                                width: '100%',
+                                justifyContent: 'flex-start',
+                                borderRadius: 0,
+                                fontSize: '0.825rem',
+                              }}
+                              onClick={() => {
+                                setIsOptionsMenuOpen(false);
+                                requestDeleteAllDevices();
+                              }}
+                            >
+                              <Trash2 size={15} color="#ef4444" /> Eliminar todos los dispositivos
                             </button>
                           </div>
                         )}

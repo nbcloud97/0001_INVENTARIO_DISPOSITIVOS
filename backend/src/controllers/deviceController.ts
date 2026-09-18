@@ -28,6 +28,8 @@ const createDeviceSchema = z.object({
   model: z.string().optional(),
   serialNumber: z.string().optional(),
   ipAddress: z.string().optional(),
+  subnetMask: z.string().optional(),
+  gateway: z.string().optional(),
   macAddress: z.string().optional(),
   credentials: z.array(credentialItemSchema).optional(),
   communicationPorts: z.array(portItemSchema).optional(),
@@ -48,6 +50,8 @@ const bulkCreateDeviceSchema = z.object({
   startNumber: z.number().int().min(1).default(1),
   count: z.number().int().min(1).max(500).default(10),
   startIpAddress: z.string().optional(),
+  subnetMask: z.string().optional(),
+  gateway: z.string().optional(),
   rackCabinet: z.string().optional(),
   switchName: z.string().optional(),
   startSwitchPort: z.number().int().optional(),
@@ -58,22 +62,27 @@ const bulkCreateDeviceSchema = z.object({
 
 const importDevicesSchema = z.object({
   systemId: z.string().min(1, 'El sistema es obligatorio'),
+  autoCreateCatalog: z.boolean().optional(),
   items: z.array(
     z.object({
       subsystemName: z.string().optional(),
       subsystemId: z.string().optional(),
       deviceTypeName: z.string().optional(),
       deviceTypeId: z.string().optional(),
+      statusName: z.string().optional(),
       assignedName: z.string().optional(),
       brand: z.string().optional(),
       model: z.string().optional(),
       serialNumber: z.string().optional(),
       ipAddress: z.string().optional(),
+      subnetMask: z.string().optional(),
+      gateway: z.string().optional(),
       macAddress: z.string().optional(),
       rackCabinet: z.string().optional(),
       switchName: z.string().optional(),
       switchPort: z.string().optional(),
       notes: z.string().optional(),
+      credentials: z.array(credentialItemSchema).optional(),
       communicationPorts: z.union([z.array(portItemSchema), z.string()]).optional(),
     })
   ).min(1, 'Debes enviar al menos un dispositivo para importar'),
@@ -146,11 +155,29 @@ export class DeviceController {
     }
   }
 
+  static async validateImport(req: Request, res: Response) {
+    try {
+      const validated = importDevicesSchema.parse(req.body);
+      const upperData = toUpperObject(validated);
+      const result = await DeviceService.validateImport(upperData.systemId, upperData.items as any);
+      return res.json({ success: true, data: result });
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ success: false, errors: error.errors });
+      }
+      return res.status(500).json({ success: false, error: error.message });
+    }
+  }
+
   static async importDevices(req: Request, res: Response) {
     try {
       const validated = importDevicesSchema.parse(req.body);
       const upperData = toUpperObject(validated);
-      const result = await DeviceService.importDevices(upperData.systemId, upperData.items as any);
+      const result = await DeviceService.importDevices(
+        upperData.systemId,
+        upperData.items as any,
+        Boolean(upperData.autoCreateCatalog)
+      );
       return res.status(201).json({ success: true, data: result });
     } catch (error: any) {
       if (error instanceof z.ZodError) {
@@ -178,6 +205,20 @@ export class DeviceController {
     try {
       await DeviceService.delete(req.params.id);
       return res.json({ success: true, message: 'Dispositivo eliminado correctamente' });
+    } catch (error: any) {
+      return res.status(500).json({ success: false, error: error.message });
+    }
+  }
+
+  static async deleteBySystem(req: Request, res: Response) {
+    try {
+      const { systemId } = req.params;
+      const result = await DeviceService.deleteBySystem(systemId);
+      return res.json({
+        success: true,
+        message: `Se han eliminado ${result.count} dispositivo(s) del sistema correctamente`,
+        count: result.count,
+      });
     } catch (error: any) {
       return res.status(500).json({ success: false, error: error.message });
     }

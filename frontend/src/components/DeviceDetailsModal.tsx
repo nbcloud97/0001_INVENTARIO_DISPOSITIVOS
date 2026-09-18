@@ -274,6 +274,24 @@ export const DeviceDetailsModal: React.FC<DeviceDetailsModalProps> = ({
                 )}
               </div>
 
+              {/* Máscara de Subred & Puerta de Enlace */}
+              {(device.subnetMask || device.gateway) && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                  <div style={{ background: 'var(--bg-primary)', padding: '0.5rem 0.75rem', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                    <span style={{ fontSize: '0.675rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', display: 'block' }}>M&aacute;scara</span>
+                    <span className="code-font" style={{ fontSize: '0.825rem', color: 'var(--text-primary)', display: 'inline-block', marginTop: '0.15rem' }}>
+                      {device.subnetMask || '-'}
+                    </span>
+                  </div>
+                  <div style={{ background: 'var(--bg-primary)', padding: '0.5rem 0.75rem', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                    <span style={{ fontSize: '0.675rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', display: 'block' }}>Gateway</span>
+                    <span className="code-font" style={{ fontSize: '0.825rem', color: 'var(--text-primary)', display: 'inline-block', marginTop: '0.15rem' }}>
+                      {device.gateway || '-'}
+                    </span>
+                  </div>
+                </div>
+              )}
+
               {/* Dirección MAC */}
               <div style={{ background: 'var(--bg-primary)', padding: '0.6rem 0.85rem', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
                 <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', display: 'block' }}>Direcci&oacute;n MAC</span>

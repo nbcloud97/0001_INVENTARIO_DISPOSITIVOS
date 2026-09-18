@@ -127,6 +127,8 @@ export interface Device {
   serialNumber?: string;
   assignedName: string;
   ipAddress?: string;
+  subnetMask?: string;
+  gateway?: string;
   macAddress?: string;
   hasCredentials?: boolean;
   credentialsCount?: number;
@@ -150,6 +152,8 @@ export interface CreateDeviceFormData {
   serialNumber?: string;
   assignedName: string;
   ipAddress?: string;
+  subnetMask?: string;
+  gateway?: string;
   macAddress?: string;
   credentials?: DeviceCredentialItem[];
   communicationPorts?: DeviceCommunicationPort[];
@@ -171,10 +175,13 @@ export interface BulkDeviceFormData {
   startNumber?: number;
   count: number;
   startIpAddress?: string;
+  subnetMask?: string;
+  gateway?: string;
   rackCabinet?: string;
   switchName?: string;
   startSwitchPort?: number;
   credentials?: DeviceCredentialItem[];
+  communicationPorts?: DeviceCommunicationPort[];
   notes?: string;
 }
 

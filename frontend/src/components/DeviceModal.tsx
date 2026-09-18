@@ -70,6 +70,8 @@ export const DeviceModal: React.FC<DeviceModalProps> = ({
         serialNumber: deviceToEdit.serialNumber || '',
         assignedName: deviceToEdit.assignedName,
         ipAddress: deviceToEdit.ipAddress || '',
+        subnetMask: deviceToEdit.subnetMask || '',
+        gateway: deviceToEdit.gateway || '',
         macAddress: deviceToEdit.macAddress || '',
         credentials: [{ title: '', username: '', password: '' }],
         communicationPorts: deviceToEdit.communicationPorts && deviceToEdit.communicationPorts.length > 0
@@ -106,6 +108,8 @@ export const DeviceModal: React.FC<DeviceModalProps> = ({
         serialNumber: '',
         assignedName: '',
         ipAddress: '',
+        subnetMask: '',
+        gateway: '',
         macAddress: '',
         credentials: [{ title: '', username: '', password: '' }],
         communicationPorts: [{ port: '', service: '' }],
@@ -381,8 +385,33 @@ export const DeviceModal: React.FC<DeviceModalProps> = ({
                 <input
                   type="text"
                   className="form-input code-font"
+                  placeholder="ej. 192.168.1.50"
                   value={formData.ipAddress}
                   onChange={(e) => setFormData({ ...formData, ipAddress: e.target.value })}
+                />
+              </div>
+
+              {/* Mascara de Subred */}
+              <div className="form-group">
+                <label className="form-label">M&aacute;scara de Subred</label>
+                <input
+                  type="text"
+                  className="form-input code-font"
+                  placeholder="ej. 255.255.255.0 ó /24"
+                  value={formData.subnetMask}
+                  onChange={(e) => setFormData({ ...formData, subnetMask: e.target.value })}
+                />
+              </div>
+
+              {/* Puerta de Enlace (Gateway) */}
+              <div className="form-group">
+                <label className="form-label">Puerta de Enlace (Gateway)</label>
+                <input
+                  type="text"
+                  className="form-input code-font"
+                  placeholder="ej. 192.168.1.1"
+                  value={formData.gateway}
+                  onChange={(e) => setFormData({ ...formData, gateway: e.target.value })}
                 />
               </div>
 
@@ -392,6 +421,7 @@ export const DeviceModal: React.FC<DeviceModalProps> = ({
                 <input
                   type="text"
                   className="form-input code-font"
+                  placeholder="ej. 00:11:22:33:44:55"
                   value={formData.macAddress}
                   onChange={(e) => setFormData({ ...formData, macAddress: e.target.value })}
                 />

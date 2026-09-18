@@ -193,6 +193,16 @@ export const swaggerDocument = {
         responses: { 200: { description: 'Sistema eliminado' } },
       },
     },
+    '/systems/{systemId}/devices': {
+      delete: {
+        summary: 'Eliminar todos los dispositivos pertenecientes a un sistema',
+        tags: ['Dispositivos'],
+        parameters: [{ name: 'systemId', in: 'path', required: true, schema: { type: 'string' } }],
+        responses: {
+          200: { description: 'Dispositivos eliminados del sistema exitosamente' },
+        },
+      },
+    },
     '/systems/{systemId}/notes': {
       get: {
         summary: 'Obtener notas técnicas de un sistema',
@@ -272,6 +282,35 @@ export const swaggerDocument = {
       post: {
         summary: 'Registrar un dispositivo individual',
         tags: ['Dispositivos'],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: {
+                type: 'object',
+                required: ['assignedName', 'clientId', 'systemId', 'subsystemId', 'deviceTypeId', 'statusId'],
+                properties: {
+                  assignedName: { type: 'string', example: 'CAM-EXT-01' },
+                  brand: { type: 'string', example: 'Hikvision' },
+                  model: { type: 'string', example: 'DS-2CD2143G0-I' },
+                  serialNumber: { type: 'string', example: 'SN12345678' },
+                  ipAddress: { type: 'string', example: '192.168.1.50' },
+                  subnetMask: { type: 'string', example: '255.255.255.0' },
+                  gateway: { type: 'string', example: '192.168.1.1' },
+                  macAddress: { type: 'string', example: '00:11:22:33:44:55' },
+                  rackCabinet: { type: 'string', example: 'Rack R1' },
+                  switchName: { type: 'string', example: 'SW-POE-01' },
+                  switchPort: { type: 'string', example: 'Port 01' },
+                  clientId: { type: 'string' },
+                  systemId: { type: 'string' },
+                  subsystemId: { type: 'string' },
+                  deviceTypeId: { type: 'string' },
+                  statusId: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
         responses: {
           201: { description: 'Dispositivo registrado' },
         },
@@ -299,6 +338,8 @@ export const swaggerDocument = {
                   startNumber: { type: 'number', example: 1 },
                   count: { type: 'number', example: 10 },
                   startIpAddress: { type: 'string', example: '192.168.1.100' },
+                  subnetMask: { type: 'string', example: '255.255.255.0' },
+                  gateway: { type: 'string', example: '192.168.1.1' },
                   rackCabinet: { type: 'string', example: 'Rack R1' },
                   switchName: { type: 'string', example: 'SW-POE-01' },
                   startSwitchPort: { type: 'number', example: 1 },

@@ -251,7 +251,7 @@ export const DeviceTable: React.FC<DeviceTableProps> = ({
                     {/* IP */}
                     <td>
                       {device.ipAddress ? (
-                        <span className="code-font" style={{ color: 'var(--accent-cyan)' }}>
+                        <span className="code-font" style={{ color: 'var(--accent-cyan)', fontWeight: 600 }}>
                           {device.ipAddress}
                         </span>
                       ) : (

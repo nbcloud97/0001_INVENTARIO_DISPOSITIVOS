@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { X, FileSpreadsheet, Upload, CheckCircle2, AlertTriangle, FileText, Download, KeyRound } from 'lucide-react';
+import { X, FileSpreadsheet, Upload, CheckCircle2, AlertTriangle, FileText, Download, KeyRound, Shield, Tag, AlertCircle, PlusCircle, StopCircle, RefreshCw } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { api } from '../services/api';
 import { downloadImportTemplate } from '../utils/excelExport';
@@ -12,6 +12,13 @@ interface ImportExcelModalProps {
   systemName?: string;
 }
 
+interface ValidationResult {
+  totalDevices: number;
+  hasNewCatalogItems: boolean;
+  newSubsystems: string[];
+  newDeviceTypes: Array<{ name: string; subsystemName: string }>;
+}
+
 export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
   isOpen,
   onClose,
@@ -21,12 +28,289 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
 }) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [parsedItems, setParsedItems] = useState<any[]>([]);
+  const [validating, setValidating] = useState(false);
+  const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [resultMessage, setResultMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
+
+  // Extractor robusto de campos por fila de Excel (evita falsos positivos por substrings como IP en TIPO)
+  const extractRowFields = (row: Record<string, any>) => {
+    const normalizeKey = (k: string) =>
+      k
+        .trim()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toUpperCase()
+        .replace(/[^A-Z0-9\s]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    const keys = Object.keys(row);
+    const normalizedKeysMap = keys.map((originalKey) => ({
+      originalKey,
+      norm: normalizeKey(originalKey),
+      rawUpper: originalKey.trim().toUpperCase(),
+    }));
+
+    const getValue = (exactCandidates: string[], fallbackRegex?: RegExp): string => {
+      // 1. Prioridad: Coincidencia EXACTA normalizada
+      for (const cand of exactCandidates) {
+        const normCand = normalizeKey(cand);
+        const match = normalizedKeysMap.find((k) => k.norm === normCand);
+        if (
+          match &&
+          row[match.originalKey] !== undefined &&
+          row[match.originalKey] !== null &&
+          String(row[match.originalKey]).trim() !== ''
+        ) {
+          return String(row[match.originalKey]).trim();
+        }
+      }
+
+      // 2. Prioridad: Expresión regular con límites de palabra \b
+      if (fallbackRegex) {
+        const match = normalizedKeysMap.find((k) => fallbackRegex.test(k.norm));
+        if (
+          match &&
+          row[match.originalKey] !== undefined &&
+          row[match.originalKey] !== null &&
+          String(row[match.originalKey]).trim() !== ''
+        ) {
+          return String(row[match.originalKey]).trim();
+        }
+      }
+
+      return '';
+    };
+
+    const assignedName = getValue(
+      [
+        'NOMBRE ASIGNADO',
+        'NOMBRE DEL DISPOSITIVO',
+        'NOMBRE DISPOSITIVO',
+        'NOMBRE DEL EQUIPO',
+        'NOMBRE EQUIPO',
+        'NOMBRE',
+        'DISPOSITIVO',
+        'EQUIPO',
+        'HOSTNAME',
+        'ASIGNADO',
+        'ELEMENTO',
+      ],
+      /\b(?:NOMBRE\s*ASIGNADO|NOMBRE\s*DISPOSITIVO|NOMBRE\s*EQUIPO|HOSTNAME)\b/
+    );
+
+    const subsystemName = getValue(
+      ['SUBSISTEMA', 'SUB SISTEMA', 'SUB-SISTEMA', 'SUBSISTEMAS', 'SUBSYSTEM'],
+      /\b(?:SUBSISTEMA|SUB\s*SISTEMA|SUBSYSTEM)\b/
+    );
+
+    const deviceTypeName = getValue(
+      [
+        'TIPO DE DISPOSITIVO',
+        'TIPO DISPOSITIVO',
+        'TIPO DE EQUIPO',
+        'TIPO EQUIPO',
+        'TIPO DE ELEMENTO',
+        'DEVICE TYPE',
+        'TIPO',
+      ],
+      /\b(?:TIPO\s*DE\s*DISPOSITIVO|TIPO\s*DISPOSITIVO|TIPO\s*DE\s*EQUIPO|TIPO\s*EQUIPO|DEVICE\s*TYPE)\b/
+    );
+
+    const statusName = getValue(
+      [
+        'ESTADO DEL DISPOSITIVO',
+        'ESTADO DISPOSITIVO',
+        'ESTADO DEL EQUIPO',
+        'ESTADO',
+        'STATUS',
+        'SITUACION',
+      ],
+      /\b(?:ESTADO|STATUS|SITUACION)\b/
+    );
+
+    const brand = getValue(
+      ['MARCA', 'FABRICANTE', 'BRAND', 'MANUFACTURER'],
+      /\b(?:MARCA|FABRICANTE|BRAND)\b/
+    );
+
+    const model = getValue(
+      ['MODELO', 'MODEL', 'REFERENCIA MODELO'],
+      /\b(?:MODELO|MODEL)\b/
+    );
+
+    const serialNumber = getValue(
+      [
+        'NUMERO DE SERIE',
+        'NUMERO SERIE',
+        'N SERIE',
+        'NO SERIE',
+        'NUM SERIE',
+        'SERIAL NUMBER',
+        'SERIAL',
+        'SERIE',
+        'S N',
+        'SN',
+      ],
+      /\b(?:NUMERO\s*DE\s*SERIE|NUMERO\s*SERIE|SERIAL\s*NUMBER|S\s*N|SN|SERIE)\b/
+    );
+
+    const ipAddress = getValue(
+      ['DIRECCION IP', 'DIR IP', 'IP ADDRESS', 'IP', 'DIRECCION DE RED'],
+      /\b(?:DIRECCION\s*IP|DIR\s*IP|IP\s*ADDRESS|^IP$)\b/
+    );
+
+    const subnetMask = getValue(
+      [
+        'MASCARA DE SUBRED',
+        'MÁSCARA DE SUBRED',
+        'MASCARA SUBRED',
+        'MÁSCARA SUBRED',
+        'MASCARA',
+        'MÁSCARA',
+        'SUBNET MASK',
+        'NETMASK',
+        'MASK',
+      ],
+      /\b(?:M[AÁ]SCARA(?:\s*DE)?\s*SUBRED|SUBNET\s*MASK|NETMASK|^M[AÁ]SCARA$)\b/
+    );
+
+    const gateway = getValue(
+      [
+        'PUERTA DE ENLACE',
+        'PUERTA ENLACE',
+        'PUERTA DE ENLACE GATEWAY',
+        'GATEWAY',
+        'PUERTA_ENLACE',
+        'DEFAULT GATEWAY',
+        'GW',
+      ],
+      /\b(?:PUERTA\s*(?:DE\s*)?ENLACE|DEFAULT\s*GATEWAY|^GATEWAY$|^GW$)\b/
+    );
+
+    const macAddress = getValue(
+      ['DIRECCION MAC', 'DIR MAC', 'MAC ADDRESS', 'MAC', 'DIRECCION FISICA'],
+      /\b(?:DIRECCION\s*MAC|DIR\s*MAC|MAC\s*ADDRESS|^MAC$)\b/
+    );
+
+    const rackCabinet = getValue(
+      ['ARMARIO RACK', 'ARMARIO', 'RACK', 'GABINETE', 'CABINET', 'UBICACION RACK'],
+      /\b(?:ARMARIO\s*RACK|ARMARIO|RACK|GABINETE|CABINET)\b/
+    );
+
+    const switchPort = getValue(
+      [
+        'SWITCH PUERTO',
+        'PUERTO SWITCH',
+        'PUERTO EN SWITCH',
+        'PUERTO DEL SWITCH',
+        'SWITCH PORT',
+        'PORT SWITCH',
+        'BOCA SWITCH',
+        'BOCA',
+        'PUERTO',
+        'PORT',
+      ],
+      /\b(?:SWITCH\s*PUERTO|PUERTO\s*SWITCH|PUERTO\s*EN\s*SWITCH|BOCA)\b/
+    );
+
+    const switchName = getValue(
+      [
+        'REFERENCIA SWITCH',
+        'REF SWITCH',
+        'NOMBRE SWITCH',
+        'SWITCH REF',
+        'SWITCH NOMBRE',
+        'SWITCH NAME',
+        'SWITCH',
+        'CONMUTADOR',
+      ],
+      /\b(?:REFERENCIA\s*SWITCH|REF\s*SWITCH|NOMBRE\s*SWITCH|SWITCH\s*REF|^SWITCH$)\b/
+    );
+
+    const communicationPorts = getValue(
+      [
+        'PUERTOS DE COMUNICACION',
+        'PUERTOS COMUNICACION',
+        'PUERTOS DE RED',
+        'PUERTOS SERVICIO',
+        'PUERTOS',
+        'PORTS',
+      ],
+      /\b(?:PUERTOS\s*DE\s*COMUNICACION|PUERTOS\s*COMUNICACION|PUERTOS)\b/
+    );
+
+    const username = getValue(
+      [
+        'USUARIO CREDENCIAL',
+        'USUARIO DE ACCESO',
+        'USUARIO ACCESO',
+        'USUARIO',
+        'USER',
+        'USERNAME',
+        'LOGIN',
+        'CREDENCIAL USUARIO',
+      ],
+      /\b(?:USUARIO\s*CREDENCIAL|USUARIO\s*ACCESO|USERNAME|USUARIO)\b/
+    );
+
+    const password = getValue(
+      [
+        'CONTRASEÑA CREDENCIAL',
+        'CONTRASENA CREDENCIAL',
+        'CONTRASEÑA DE ACCESO',
+        'CONTRASENA DE ACCESO',
+        'CONTRASEÑA',
+        'CONTRASENA',
+        'PASSWORD',
+        'PASS',
+        'CLAVE',
+        'PWD',
+      ],
+      /\b(?:CONTRASE[NÑ]A|PASSWORD|CLAVE|PWD)\b/
+    );
+
+    const credTitle =
+      getValue(
+        ['ETIQUETA CREDENCIAL', 'TIPO CREDENCIAL', 'TITULO CREDENCIAL', 'ETIQUETA', 'CREDENCIAL'],
+        /\b(?:ETIQUETA\s*CREDENCIAL|TIPO\s*CREDENCIAL|ETIQUETA)\b/
+      ) || 'ACCESO WEB';
+
+    const notes = getValue(
+      ['NOTAS', 'OBSERVACIONES', 'COMENTARIOS', 'DESCRIPCION', 'NOTES', 'COMMENTS'],
+      /\b(?:NOTAS|OBSERVACIONES|COMENTARIOS|DESCRIPCION|NOTES)\b/
+    );
+
+    let credentials = undefined;
+    if (username || password) {
+      credentials = [{ title: credTitle, username, password }];
+    }
+
+    return {
+      assignedName,
+      subsystemName,
+      deviceTypeName,
+      statusName,
+      brand,
+      model,
+      serialNumber,
+      ipAddress,
+      subnetMask,
+      gateway,
+      macAddress,
+      rackCabinet,
+      switchName,
+      switchPort,
+      credentials,
+      communicationPorts: communicationPorts || undefined,
+      notes,
+    };
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -35,9 +319,10 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
     setSelectedFile(file);
     setError(null);
     setResultMessage(null);
+    setValidationResult(null);
 
     const reader = new FileReader();
-    reader.onload = (evt) => {
+    reader.onload = async (evt) => {
       try {
         const data = new Uint8Array(evt.target?.result as ArrayBuffer);
         const workbook = XLSX.read(data, { type: 'array' });
@@ -51,62 +336,38 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
           return;
         }
 
-        // Mapear encabezados dinámicamente de forma flexible
-        const mapped = rawJson.map((row) => {
-          const getItemValue = (keys: string[]) => {
-            for (const k of Object.keys(row)) {
-              const cleanK = k.trim().toUpperCase();
-              if (keys.some((target) => cleanK.includes(target.toUpperCase()))) {
-                return String(row[k]).trim();
-              }
-            }
-            return '';
-          };
-
-          const username = getItemValue(['USUARIO CREDENCIAL', 'USUARIO', 'USER', 'USERNAME']);
-          const password = getItemValue(['CONTRASEÑA CREDENCIAL', 'CONTRASEÑA', 'PASSWORD', 'PASS']);
-          const title = getItemValue(['ETIQUETA CREDENCIAL', 'ETIQUETA', 'TIPO CREDENCIAL', 'CREDENCIAL']) || 'ACCESO WEB';
-
-          let credentials = undefined;
-          if (username || password) {
-            credentials = [{ title, username, password }];
-          }
-
-          const portsStr = getItemValue(['PUERTOS DE COMUNICACIÓN', 'PUERTOS COMUNICACION', 'PUERTOS', 'PORTS']);
-          let communicationPorts = undefined;
-          if (portsStr) {
-            communicationPorts = portsStr;
-          }
-
-          return {
-            assignedName: getItemValue(['NOMBRE ASIGNADO', 'NOMBRE', 'DISPOSITIVO', 'EQUIPO']),
-            subsystemName: getItemValue(['SUBSISTEMA', 'SUB-SISTEMA']),
-            deviceTypeName: getItemValue(['TIPO DE DISPOSITIVO', 'TIPO DISPOSITIVO', 'TIPO DE EQUIPO', 'TIPO EQUIPO', 'TIPO']),
-            statusName: getItemValue(['ESTADO', 'ESTADO DISPOSITIVO', 'STATUS']),
-            brand: getItemValue(['MARCA']),
-            model: getItemValue(['MODELO']),
-            serialNumber: getItemValue(['NÚMERO DE SERIE', 'NUMERO DE SERIE', 'Nº SERIE', 'SERIE']),
-            ipAddress: getItemValue(['DIRECCIÓN IP', 'DIRECCION IP', 'IP']),
-            macAddress: getItemValue(['DIRECCIÓN MAC', 'DIRECCION MAC', 'MAC']),
-            rackCabinet: getItemValue(['RACK', 'ARMARIO RACK']),
-            switchName: getItemValue(['REFERENCIA SWITCH', 'SWITCH']),
-            switchPort: getItemValue(['SWITCH PUERTO', 'PUERTO EN SWITCH', 'PUERTO']),
-            credentials,
-            communicationPorts,
-            notes: getItemValue(['NOTAS', 'OBSERVACIONES']),
-          };
-        });
+        // Mapear filas con el extractor robusto
+        const mapped = rawJson.map((row) => extractRowFields(row));
 
         // Filtrar elementos válidos que tengan algún dato relevante
         const validItems = mapped.filter(
-          (item) => item.assignedName || item.ipAddress || item.brand || item.subsystemName || item.deviceTypeName
+          (item) =>
+            item.assignedName ||
+            item.ipAddress ||
+            item.brand ||
+            item.model ||
+            item.subsystemName ||
+            item.deviceTypeName
         );
 
         if (validItems.length === 0) {
           setError('No se pudieron reconocer columnas o dispositivos válidos en el archivo Excel.');
+          setParsedItems([]);
+          return;
         }
 
         setParsedItems(validItems);
+
+        // Validar catálogo contra el sistema
+        setValidating(true);
+        try {
+          const valRes = await api.validateImportDevices(systemId, validItems);
+          setValidationResult(valRes);
+        } catch (valErr: any) {
+          console.error('Error al validar catálogo de importación:', valErr);
+        } finally {
+          setValidating(false);
+        }
       } catch (err: any) {
         setError(`Error al leer el archivo Excel: ${err.message}`);
         setParsedItems([]);
@@ -116,7 +377,7 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
     reader.readAsArrayBuffer(file);
   };
 
-  const handleImport = async () => {
+  const handleImport = async (autoCreateCatalog = false) => {
     if (parsedItems.length === 0) return;
 
     setLoading(true);
@@ -124,7 +385,7 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
     setResultMessage(null);
 
     try {
-      const res = await api.importDevices(systemId, parsedItems);
+      const res = await api.importDevices(systemId, parsedItems, autoCreateCatalog);
       setResultMessage(res.message);
       setTimeout(() => {
         onSuccess();
@@ -137,9 +398,18 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
     }
   };
 
+  const handleStopImport = () => {
+    setError('Importación cancelada por el usuario. No se ha modificado la base de datos ni registrado ningún dispositivo.');
+    setValidationResult(null);
+    setParsedItems([]);
+    setSelectedFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   const handleResetFile = () => {
     setSelectedFile(null);
     setParsedItems([]);
+    setValidationResult(null);
     setError(null);
     setResultMessage(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -147,7 +417,7 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-card" style={{ maxWidth: '700px' }} onClick={(e) => e.stopPropagation()}>
+      <div className="modal-card" style={{ maxWidth: '850px' }} onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
             <FileSpreadsheet color="var(--accent-emerald)" size={24} />
@@ -212,7 +482,7 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
                 Haz clic para seleccionar o arrastra tu archivo Excel
               </h3>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                Soporta datos técnicos y credenciales de acceso (.XLSX, .XLS, .CSV)
+                Soporta datos técnicos, direccionamiento IP/MAC y credenciales de acceso (.XLSX, .XLS, .CSV)
               </p>
               <input
                 ref={fileInputRef}
@@ -232,6 +502,7 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
                     <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{selectedFile.name}</div>
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                       {(selectedFile.size / 1024).toFixed(1)} KB • {parsedItems.length} dispositivos detectados
+                      {validating && ' (Comprobando catálogo...)'}
                     </div>
                   </div>
                 </div>
@@ -240,31 +511,165 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
                 </button>
               </div>
 
+              {/* ALERTA DE NUEVOS ELEMENTOS DETECTADOS EN EL CATÁLOGO */}
+              {validationResult?.hasNewCatalogItems && (
+                <div
+                  style={{
+                    background: 'rgba(245, 158, 11, 0.12)',
+                    border: '1px solid rgba(245, 158, 11, 0.4)',
+                    borderRadius: '8px',
+                    padding: '1rem 1.15rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.85rem',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--accent-amber)', fontWeight: 600, fontSize: '0.95rem' }}>
+                    <AlertCircle size={20} />
+                    <span>Nuevos elementos detectados en el archivo</span>
+                  </div>
+
+                  <p style={{ fontSize: '0.825rem', color: 'var(--text-primary)', margin: 0, lineHeight: 1.45 }}>
+                    Se han encontrado subsistemas o tipos de dispositivo en la plantilla que <strong>aún no están registrados en el sistema</strong>:
+                  </p>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', background: 'var(--bg-card)', padding: '0.75rem', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                    {/* Nuevos Subsistemas */}
+                    {validationResult.newSubsystems.length > 0 && (
+                      <div>
+                        <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-secondary)', fontWeight: 600, marginBottom: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                          <Shield size={14} color="var(--accent-blue)" /> Nuevos Subsistemas ({validationResult.newSubsystems.length}):
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                          {validationResult.newSubsystems.map((sub, idx) => (
+                            <span
+                              key={idx}
+                              style={{
+                                background: 'rgba(2, 132, 199, 0.15)',
+                                color: 'var(--accent-blue)',
+                                border: '1px solid rgba(2, 132, 199, 0.3)',
+                                padding: '0.2rem 0.55rem',
+                                borderRadius: '4px',
+                                fontSize: '0.8rem',
+                                fontWeight: 500,
+                              }}
+                            >
+                              + {sub}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Nuevos Tipos de Dispositivo */}
+                    {validationResult.newDeviceTypes.length > 0 && (
+                      <div style={{ marginTop: validationResult.newSubsystems.length > 0 ? '0.5rem' : 0 }}>
+                        <div style={{ fontSize: '0.75rem', textTransform: 'uppercase', color: 'var(--text-secondary)', fontWeight: 600, marginBottom: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                          <Tag size={14} color="var(--accent-amber)" /> Nuevos Tipos de Dispositivo ({validationResult.newDeviceTypes.length}):
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                          {validationResult.newDeviceTypes.map((dt, idx) => (
+                            <span
+                              key={idx}
+                              style={{
+                                background: 'rgba(245, 158, 11, 0.15)',
+                                color: 'var(--accent-amber)',
+                                border: '1px solid rgba(245, 158, 11, 0.3)',
+                                padding: '0.2rem 0.55rem',
+                                borderRadius: '4px',
+                                fontSize: '0.8rem',
+                                fontWeight: 500,
+                              }}
+                            >
+                              + {dt.name} <span style={{ opacity: 0.75, fontSize: '0.725rem' }}>({dt.subsystemName})</span>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div style={{ fontSize: '0.825rem', color: 'var(--text-primary)', fontWeight: 500 }}>
+                    ¿Deseas añadir estos nuevos elementos al sistema y proceder con la importaci&oacute;n?
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      className="btn btn-success"
+                      style={{ fontSize: '0.825rem', padding: '0.45rem 0.9rem' }}
+                      disabled={loading}
+                      onClick={() => handleImport(true)}
+                    >
+                      <PlusCircle size={16} />
+                      {loading ? 'Añadiendo e importando...' : 'Sí, añadir al sistema e importar'}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-danger"
+                      style={{ fontSize: '0.825rem', padding: '0.45rem 0.9rem' }}
+                      disabled={loading}
+                      onClick={handleStopImport}
+                    >
+                      <StopCircle size={16} />
+                      No, detener importación
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Previsualización de los Primeros Dispositivos */}
               {parsedItems.length > 0 && (
                 <div>
                   <h4 style={{ fontSize: '0.8rem', textTransform: 'uppercase', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
-                    Vista Previa ({parsedItems.length} filas reconocidas)
+                    Vista Previa Reconocida ({parsedItems.length} filas)
                   </h4>
-                  <div style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid var(--border-color)', borderRadius: '6px', background: 'var(--bg-card)' }}>
+                  <div style={{ maxHeight: '240px', overflowY: 'auto', border: '1px solid var(--border-color)', borderRadius: '6px', background: 'var(--bg-card)' }}>
                     <table className="device-table" style={{ fontSize: '0.775rem' }}>
                       <thead>
                         <tr>
-                          <th>Nombre</th>
+                          <th>Nombre Asignado</th>
                           <th>Subsistema</th>
                           <th>Tipo</th>
-                          <th>IP</th>
+                          <th>Marca / Modelo</th>
+                          <th>Dirección IP</th>
+                          <th>Dirección MAC</th>
                           <th>Credenciales</th>
-                          <th>RACK / SWITCH</th>
+                          <th>Rack / Switch</th>
                         </tr>
                       </thead>
                       <tbody>
                         {parsedItems.slice(0, 10).map((item, idx) => (
                           <tr key={idx}>
                             <td style={{ fontWeight: 600, color: 'var(--accent-blue)' }}>{item.assignedName || `DISPOSITIVO_${idx+1}`}</td>
-                            <td>{item.subsystemName || 'GENERAL'}</td>
-                            <td>{item.deviceTypeName || '-'}</td>
-                            <td className="code-font">{item.ipAddress || '-'}</td>
+                            <td>{item.subsystemName || <span style={{ color: 'var(--text-muted)' }}>-</span>}</td>
+                            <td>{item.deviceTypeName || <span style={{ color: 'var(--text-muted)' }}>-</span>}</td>
+                            <td>
+                              {item.brand || item.model ? (
+                                <span>{item.brand} {item.model}</span>
+                              ) : (
+                                <span style={{ color: 'var(--text-muted)' }}>-</span>
+                              )}
+                            </td>
+                            <td>
+                              {item.ipAddress ? (
+                                <div>
+                                  <span className="code-font" style={{ color: 'var(--accent-emerald)', fontWeight: 600 }}>
+                                    {item.ipAddress}
+                                  </span>
+                                  {(item.subnetMask || item.gateway) && (
+                                    <div className="code-font" style={{ fontSize: '0.675rem', color: 'var(--text-muted)', marginTop: '0.1rem' }}>
+                                      {item.subnetMask ? `M: ${item.subnetMask}` : ''}
+                                      {item.subnetMask && item.gateway ? ' • ' : ''}
+                                      {item.gateway ? `GW: ${item.gateway}` : ''}
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <span style={{ color: 'var(--text-muted)' }}>-</span>
+                              )}
+                            </td>
+                            <td className="code-font">{item.macAddress || <span style={{ color: 'var(--text-muted)' }}>-</span>}</td>
                             <td>
                               {item.credentials ? (
                                 <span style={{ color: 'var(--accent-amber)', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '0.2rem' }}>
@@ -274,7 +679,13 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
                                 <span style={{ color: 'var(--text-muted)' }}>-</span>
                               )}
                             </td>
-                            <td>{item.rackCabinet || item.switchName || '-'}</td>
+                            <td>
+                              {item.rackCabinet || item.switchName ? (
+                                <span>{item.rackCabinet || ''} {item.switchName ? `(${item.switchName}${item.switchPort ? `:${item.switchPort}` : ''})` : ''}</span>
+                              ) : (
+                                <span style={{ color: 'var(--text-muted)' }}>-</span>
+                              )}
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -295,14 +706,16 @@ export const ImportExcelModal: React.FC<ImportExcelModalProps> = ({
           <button type="button" className="btn btn-secondary" onClick={onClose}>
             Cancelar
           </button>
-          <button
-            type="button"
-            className="btn btn-success"
-            disabled={loading || parsedItems.length === 0}
-            onClick={handleImport}
-          >
-            {loading ? 'Importando...' : `Importar ${parsedItems.length} Dispositivos`}
-          </button>
+          {!validationResult?.hasNewCatalogItems && (
+            <button
+              type="button"
+              className="btn btn-success"
+              disabled={loading || parsedItems.length === 0 || validating}
+              onClick={() => handleImport(false)}
+            >
+              {loading ? 'Importando...' : `Importar ${parsedItems.length} Dispositivos`}
+            </button>
+          )}
         </div>
       </div>
     </div>

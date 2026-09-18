@@ -61,6 +61,8 @@ export interface CreateDeviceInput {
   serialNumber?: string;
   assignedName: string;
   ipAddress?: string;
+  subnetMask?: string;
+  gateway?: string;
   macAddress?: string;
   credentials?: DeviceCredentialItem[];
   communicationPorts?: DeviceCommunicationPortItem[];
@@ -82,6 +84,8 @@ export interface BulkCreateDevicesInput {
   startNumber?: number;
   count: number;
   startIpAddress?: string;
+  subnetMask?: string;
+  gateway?: string;
   rackCabinet?: string;
   switchName?: string;
   startSwitchPort?: number;
@@ -101,6 +105,8 @@ export interface ImportDeviceItemInput {
   model?: string;
   serialNumber?: string;
   ipAddress?: string;
+  subnetMask?: string;
+  gateway?: string;
   macAddress?: string;
   rackCabinet?: string;
   switchName?: string;
@@ -274,6 +280,8 @@ export class DeviceService {
         serialNumber: data.serialNumber || null,
         assignedName: data.assignedName,
         ipAddress: data.ipAddress || null,
+        subnetMask: data.subnetMask || null,
+        gateway: data.gateway || null,
         macAddress: data.macAddress || null,
         credentialsEncrypted,
         communicationPorts: communicationPortsStr,
@@ -339,6 +347,8 @@ export class DeviceService {
       }
     }
 
+    const communicationPortsStr = stringifyCommunicationPorts(data.communicationPorts);
+
     let currentIpParts: number[] | null = null;
     if (startIpAddress) {
       currentIpParts = startIpAddress.split('.').map(Number);
@@ -383,8 +393,11 @@ export class DeviceService {
         serialNumber: undefined,
         assignedName,
         ipAddress,
+        subnetMask: data.subnetMask || null,
+        gateway: data.gateway || null,
         macAddress: undefined,
         credentialsEncrypted,
+        communicationPorts: communicationPortsStr,
         rackCabinet: rackCabinet || null,
         switchName: switchName || null,
         switchPort,
@@ -402,15 +415,104 @@ export class DeviceService {
     };
   }
 
-  static async importDevices(systemId: string, items: ImportDeviceItemInput[]) {
-    const system = await prisma.system.findUnique({ where: { id: systemId } });
+  static async validateImport(systemId: string, items: ImportDeviceItemInput[]) {
+    const system = await prisma.system.findUnique({
+      where: { id: systemId },
+      include: { subsystem: true },
+    });
     if (!system) throw new Error('El sistema especificado no existe');
 
     const allSubsystems = await prisma.subsystem.findMany();
-    const defaultSubsystem = allSubsystems[0];
+    const defaultSubsystem = system.subsystem || allSubsystems[0];
     if (!defaultSubsystem) throw new Error('No hay subsistemas registrados en la aplicación');
 
-    let allDeviceTypes = await prisma.deviceType.findMany();
+    const allDeviceTypes = await prisma.deviceType.findMany({
+      include: { subsystem: true },
+    });
+
+    const norm = (str?: string | null) =>
+      str ? str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '') : '';
+
+    const newSubsystemsMap = new Map<string, string>(); // norm -> originalName
+    const newDeviceTypesMap = new Map<string, { name: string; subsystemName: string }>(); // norm(subsystem)+norm(type) -> obj
+
+    for (let index = 0; index < items.length; index++) {
+      const item = items[index];
+      const rawTypeName = (item.deviceTypeName || item.deviceTypeId || '').trim();
+      if (!rawTypeName) continue;
+
+      let resolvedSubsystemName = defaultSubsystem.name;
+      let isNewSubsystem = false;
+
+      // 1. Validar subsistema
+      if (item.subsystemId) {
+        const found = allSubsystems.find(s => s.id === item.subsystemId);
+        if (found) resolvedSubsystemName = found.name;
+      } else if (item.subsystemName && item.subsystemName.trim()) {
+        const rawSubName = item.subsystemName.trim();
+        const targetSubNorm = norm(rawSubName);
+        let found = allSubsystems.find(s => norm(s.name) === targetSubNorm);
+        if (!found) {
+          found = allSubsystems.find(s => norm(s.name).includes(targetSubNorm) || targetSubNorm.includes(norm(s.name)));
+        }
+
+        if (found) {
+          resolvedSubsystemName = found.name;
+        } else {
+          isNewSubsystem = true;
+          resolvedSubsystemName = rawSubName;
+          if (!newSubsystemsMap.has(targetSubNorm)) {
+            newSubsystemsMap.set(targetSubNorm, rawSubName);
+          }
+        }
+      }
+
+      // 2. Validar tipo de dispositivo
+      const targetTypeNorm = norm(rawTypeName);
+      let foundType = allDeviceTypes.find(
+        dt => norm(dt.subsystem?.name) === norm(resolvedSubsystemName) && norm(dt.name) === targetTypeNorm
+      );
+
+      if (!foundType && !isNewSubsystem) {
+        foundType = allDeviceTypes.find(dt => norm(dt.name) === targetTypeNorm);
+      }
+
+      if (!foundType) {
+        const key = `${norm(resolvedSubsystemName)}:::${targetTypeNorm}`;
+        if (!newDeviceTypesMap.has(key)) {
+          newDeviceTypesMap.set(key, {
+            name: rawTypeName,
+            subsystemName: resolvedSubsystemName,
+          });
+        }
+      }
+    }
+
+    const newSubsystems = Array.from(newSubsystemsMap.values());
+    const newDeviceTypes = Array.from(newDeviceTypesMap.values());
+
+    return {
+      totalDevices: items.length,
+      hasNewCatalogItems: newSubsystems.length > 0 || newDeviceTypes.length > 0,
+      newSubsystems,
+      newDeviceTypes,
+    };
+  }
+
+  static async importDevices(systemId: string, items: ImportDeviceItemInput[], autoCreateCatalog: boolean = false) {
+    const system = await prisma.system.findUnique({
+      where: { id: systemId },
+      include: { subsystem: true },
+    });
+    if (!system) throw new Error('El sistema especificado no existe');
+
+    let allSubsystems = await prisma.subsystem.findMany();
+    const defaultSubsystem = system.subsystem || allSubsystems[0];
+    if (!defaultSubsystem) throw new Error('No hay subsistemas registrados en la aplicación');
+
+    let allDeviceTypes = await prisma.deviceType.findMany({
+      include: { subsystem: true },
+    });
     let allStatuses = await prisma.deviceStatus.findMany();
 
     const defaultStatus = allStatuses.find(st => st.name.trim().toLowerCase() === 'operativo') || allStatuses[0];
@@ -444,17 +546,32 @@ export class DeviceService {
           resolvedSubsystemId = found.id;
           resolvedSubsystemName = found.name;
         }
-      } else if (item.subsystemName) {
-        const targetNorm = norm(item.subsystemName);
+      } else if (item.subsystemName && item.subsystemName.trim()) {
+        const rawSubName = item.subsystemName.trim();
+        const targetNorm = norm(rawSubName);
         // Coincidencia exacta o normalizada
         let found = allSubsystems.find(s => norm(s.name) === targetNorm);
-        // Coincidencia por subcadena (ej: "INTRUSIÓN" coincide con "Intrusión / Alarma")
+        // Coincidencia por subcadena
         if (!found) {
           found = allSubsystems.find(s => norm(s.name).includes(targetNorm) || targetNorm.includes(norm(s.name)));
         }
+
         if (found) {
           resolvedSubsystemId = found.id;
           resolvedSubsystemName = found.name;
+        } else if (autoCreateCatalog) {
+          // Crear automáticamente el nuevo subsistema
+          const newSub = await prisma.subsystem.create({
+            data: {
+              name: rawSubName,
+              color: '#005596',
+              icon: 'shield',
+              description: 'Creado automáticamente durante importación de Excel',
+            },
+          });
+          allSubsystems.push(newSub);
+          resolvedSubsystemId = newSub.id;
+          resolvedSubsystemName = newSub.name;
         }
       }
 
@@ -498,13 +615,25 @@ export class DeviceService {
           if (found.subsystemId && !item.subsystemName && !item.subsystemId) {
             resolvedSubsystemId = found.subsystemId;
           }
+        } else if (autoCreateCatalog) {
+          // Crear automáticamente el nuevo tipo de dispositivo
+          const newType = await prisma.deviceType.create({
+            data: {
+              name: rawTypeName,
+              subsystemId: resolvedSubsystemId,
+              description: 'Creado automáticamente durante importación de Excel',
+            },
+            include: { subsystem: true },
+          });
+          allDeviceTypes.push(newType);
+          resolvedDeviceTypeId = newType.id;
         }
       }
 
       // 4. Si el tipo no está creado en la base de datos, arrojar error descriptivo
       if (!resolvedDeviceTypeId) {
         throw new Error(
-          `Error en la fila ${index + 1} (${assignedName}): El tipo de dispositivo "${rawTypeName}" no se encuentra en el catálogo. Por favor, regístralo previamente en Configuración > Catálogo de Tipos.`
+          `Error en la fila ${index + 1} (${assignedName}): El tipo de dispositivo "${rawTypeName}" no se encuentra en el catálogo. Por favor, regístralo previamente en Configuración > Catálogo de Tipos o autoriza su creación automática.`
         );
       }
 
@@ -548,6 +677,8 @@ export class DeviceService {
         model: item.model || null,
         serialNumber: item.serialNumber || null,
         ipAddress: item.ipAddress || null,
+        subnetMask: item.subnetMask || null,
+        gateway: item.gateway || null,
         macAddress: item.macAddress || null,
         credentialsEncrypted,
         communicationPorts: commPortsStr,
@@ -596,6 +727,8 @@ export class DeviceService {
       ...(data.serialNumber !== undefined && { serialNumber: data.serialNumber }),
       ...(data.assignedName && { assignedName: data.assignedName }),
       ...(data.ipAddress !== undefined && { ipAddress: data.ipAddress }),
+      ...(data.subnetMask !== undefined && { subnetMask: data.subnetMask }),
+      ...(data.gateway !== undefined && { gateway: data.gateway }),
       ...(data.macAddress !== undefined && { macAddress: data.macAddress }),
       ...(data.rackCabinet !== undefined && { rackCabinet: data.rackCabinet }),
       ...(data.switchName !== undefined && { switchName: data.switchName }),
@@ -647,6 +780,12 @@ export class DeviceService {
   static async delete(id: string) {
     return await prisma.device.delete({
       where: { id },
+    });
+  }
+
+  static async deleteBySystem(systemId: string) {
+    return await prisma.device.deleteMany({
+      where: { systemId },
     });
   }
 }

@@ -38,6 +38,8 @@ export async function exportSystemDevicesToExcel(
         'MODELO': device.model || '',
         'NÚMERO DE SERIE': device.serialNumber || '',
         'DIRECCIÓN IP': device.ipAddress || '',
+        'MÁSCARA DE SUBRED': device.subnetMask || '',
+        'PUERTA DE ENLACE': device.gateway || '',
         'PUERTOS DE COMUNICACIÓN': portsSummary,
         'DIRECCIÓN MAC': device.macAddress || '',
         'RACK': device.rackCabinet || '',
@@ -52,7 +54,7 @@ export async function exportSystemDevicesToExcel(
   // Crear la hoja de cálculo XLSX
   const worksheet = XLSX.utils.json_to_sheet(rows);
 
-  // Ajustar anchos de columna automáticamente para legibilidad
+  // Ajustar anchos de columna automáticamente para legibilidad (18 columnas)
   const columnWidths = [
     { wch: 22 }, // CLIENTE
     { wch: 25 }, // SISTEMA
@@ -63,6 +65,8 @@ export async function exportSystemDevicesToExcel(
     { wch: 18 }, // MODELO
     { wch: 20 }, // NÚMERO DE SERIE
     { wch: 18 }, // DIRECCIÓN IP
+    { wch: 20 }, // MÁSCARA DE SUBRED
+    { wch: 20 }, // PUERTA DE ENLACE
     { wch: 25 }, // PUERTOS DE COMUNICACIÓN
     { wch: 20 }, // DIRECCIÓN MAC
     { wch: 20 }, // RACK
@@ -99,6 +103,8 @@ export function downloadImportTemplate() {
       'MODELO': 'DS-2CD2143G0-I',
       'NÚMERO DE SERIE': 'HKV-2026-987651',
       'DIRECCIÓN IP': '192.168.1.101',
+      'MÁSCARA DE SUBRED': '255.255.255.0',
+      'PUERTA DE ENLACE': '192.168.1.1',
       'PUERTOS DE COMUNICACIÓN': '80 (HTTP), 554 (RTSP), 8000 (SDK)',
       'DIRECCIÓN MAC': '00:11:22:33:44:55',
       'RACK': 'RACK R1 - PLANTA 0',
@@ -118,6 +124,8 @@ export function downloadImportTemplate() {
       'MODELO': 'CBS350-24P-4G',
       'NÚMERO DE SERIE': 'FCW242100AB',
       'DIRECCIÓN IP': '192.168.1.10',
+      'MÁSCARA DE SUBRED': '255.255.255.0',
+      'PUERTA DE ENLACE': '192.168.1.1',
       'PUERTOS DE COMUNICACIÓN': '22 (SSH), 443 (HTTPS)',
       'DIRECCIÓN MAC': '00:1A:2B:3C:4D:5E',
       'RACK': 'RACK R1 - PLANTA 0',
@@ -137,6 +145,8 @@ export function downloadImportTemplate() {
       'MODELO': 'GALAXY FLEX 50',
       'NÚMERO DE SERIE': 'HON-INT-2026-02',
       'DIRECCIÓN IP': '192.168.1.102',
+      'MÁSCARA DE SUBRED': '255.255.255.0',
+      'PUERTA DE ENLACE': '192.168.1.1',
       'PUERTOS DE COMUNICACIÓN': '443 (HTTPS), 10001',
       'DIRECCIÓN MAC': '00:11:22:33:44:56',
       'RACK': 'RACK SECUNDARIO R2',
@@ -156,6 +166,8 @@ export function downloadImportTemplate() {
       'MODELO': 'AS-600',
       'NÚMERO DE SERIE': 'DOR-ACC-8821',
       'DIRECCIÓN IP': '192.168.1.103',
+      'MÁSCARA DE SUBRED': '255.255.255.0',
+      'PUERTA DE ENLACE': '192.168.1.1',
       'PUERTOS DE COMUNICACIÓN': '4001, 80',
       'DIRECCIÓN MAC': '00:11:22:33:44:57',
       'RACK': 'RACK R1 - PLANTA 0',
@@ -175,6 +187,8 @@ export function downloadImportTemplate() {
       'MODELO': 'MEET IP',
       'NÚMERO DE SERIE': 'FMX-MEET-2026',
       'DIRECCIÓN IP': '192.168.1.104',
+      'MÁSCARA DE SUBRED': '255.255.255.0',
+      'PUERTA DE ENLACE': '192.168.1.1',
       'PUERTOS DE COMUNICACIÓN': '5060 (SIP), 80 (HTTP)',
       'DIRECCIÓN MAC': '00:11:22:33:44:58',
       'RACK': '',
@@ -189,7 +203,7 @@ export function downloadImportTemplate() {
 
   const worksheet = XLSX.utils.json_to_sheet(templateRows);
 
-  // Anchos exactos para las 17 columnas de la plantilla
+  // Anchos exactos para las 19 columnas de la plantilla
   worksheet['!cols'] = [
     { wch: 28 }, // 1. NOMBRE ASIGNADO
     { wch: 22 }, // 2. SUBSISTEMA
@@ -199,15 +213,17 @@ export function downloadImportTemplate() {
     { wch: 20 }, // 6. MODELO
     { wch: 22 }, // 7. NÚMERO DE SERIE
     { wch: 18 }, // 8. DIRECCIÓN IP
-    { wch: 32 }, // 9. PUERTOS DE COMUNICACIÓN
-    { wch: 20 }, // 10. DIRECCIÓN MAC
-    { wch: 22 }, // 11. RACK
-    { wch: 22 }, // 12. REFERENCIA SWITCH
-    { wch: 18 }, // 13. SWITCH PUERTO
-    { wch: 22 }, // 14. USUARIO CREDENCIAL
-    { wch: 25 }, // 15. CONTRASEÑA CREDENCIAL
-    { wch: 22 }, // 16. ETIQUETA CREDENCIAL
-    { wch: 40 }, // 17. NOTAS
+    { wch: 20 }, // 9. MÁSCARA DE SUBRED
+    { wch: 20 }, // 10. PUERTA DE ENLACE
+    { wch: 32 }, // 11. PUERTOS DE COMUNICACIÓN
+    { wch: 20 }, // 12. DIRECCIÓN MAC
+    { wch: 22 }, // 13. RACK
+    { wch: 22 }, // 14. REFERENCIA SWITCH
+    { wch: 18 }, // 15. SWITCH PUERTO
+    { wch: 22 }, // 16. USUARIO CREDENCIAL
+    { wch: 25 }, // 17. CONTRASEÑA CREDENCIAL
+    { wch: 22 }, // 18. ETIQUETA CREDENCIAL
+    { wch: 40 }, // 19. NOTAS
   ];
 
   // Hoja 2: Guía de Referencia y Catálogos
@@ -218,7 +234,8 @@ export function downloadImportTemplate() {
     { 'CAMPO': 'ESTADO', 'OBLIGATORIO': 'NO', 'DESCRIPCIÓN': 'Operativo, Falta instalación, En mantenimiento, Baja (Por defecto: Operativo)' },
     { 'CAMPO': 'MARCA / MODELO', 'OBLIGATORIO': 'NO', 'DESCRIPCIÓN': 'Fabricante y modelo del dispositivo (ej: HIKVISION, CISCO, FERMAX)' },
     { 'CAMPO': 'NÚMERO DE SERIE', 'OBLIGATORIO': 'NO', 'DESCRIPCIÓN': 'Número de serie o identificador de hardware del fabricante' },
-    { 'CAMPO': 'DIRECCIÓN IP / MAC', 'OBLIGATORIO': 'NO', 'DESCRIPCIÓN': 'Dirección IPv4 asignada y dirección física MAC' },
+    { 'CAMPO': 'DIRECCIÓN IP / MÁSCARA / GATEWAY', 'OBLIGATORIO': 'NO', 'DESCRIPCIÓN': 'Parámetros de red IPv4 (ej. IP: 192.168.1.100, Máscara: 255.255.255.0, Gateway: 192.168.1.1)' },
+    { 'CAMPO': 'DIRECCIÓN MAC', 'OBLIGATORIO': 'NO', 'DESCRIPCIÓN': 'Dirección física de red (ej: 00:11:22:33:44:55)' },
     { 'CAMPO': 'PUERTOS DE COMUNICACIÓN', 'OBLIGATORIO': 'NO', 'DESCRIPCIÓN': 'Puertos y servicios separados por coma (ej: 80 (HTTP), 443 (HTTPS), 554 (RTSP))' },
     { 'CAMPO': 'RACK / SWITCH / PUERTO', 'OBLIGATORIO': 'NO', 'DESCRIPCIÓN': 'Ubicación física en armario rack, switch de parcheo y puerto de red' },
     { 'CAMPO': 'CREDENCIALES', 'OBLIGATORIO': 'NO', 'DESCRIPCIÓN': 'Usuario, Contraseña y Etiqueta (Se almacenan cifradas en AES-256-GCM)' },
@@ -227,9 +244,9 @@ export function downloadImportTemplate() {
 
   const guideWorksheet = XLSX.utils.json_to_sheet(guideRows);
   guideWorksheet['!cols'] = [
-    { wch: 26 },
+    { wch: 35 },
     { wch: 16 },
-    { wch: 65 },
+    { wch: 80 },
   ];
 
   const workbook = XLSX.utils.book_new();

@@ -85,9 +85,11 @@ apiRouter.get('/devices/:id', authenticateToken, DeviceController.getById);
 apiRouter.get('/devices/:id/credentials', authenticateToken, DeviceController.getCredentials);
 apiRouter.post('/devices', authenticateToken, DeviceController.create);
 apiRouter.post('/devices/bulk', authenticateToken, DeviceController.createBulk);
+apiRouter.post('/devices/import/validate', authenticateToken, DeviceController.validateImport);
 apiRouter.post('/devices/import', authenticateToken, DeviceController.importDevices);
 apiRouter.put('/devices/:id', authenticateToken, DeviceController.update);
 apiRouter.delete('/devices/:id', authenticateToken, DeviceController.delete);
+apiRouter.delete('/systems/:systemId/devices', authenticateToken, DeviceController.deleteBySystem);
 
 // Rutas de Integración con Oracle ERP Beta 10
 apiRouter.get('/beta10/search', authenticateToken, Beta10Controller.searchClients);

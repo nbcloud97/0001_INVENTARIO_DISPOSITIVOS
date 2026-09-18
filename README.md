@@ -145,6 +145,8 @@ erDiagram
         string model "Modelo"
         string serialNumber "Nº Serie"
         string ipAddress "Dirección IP"
+        string subnetMask "Máscara de Subred"
+        string gateway "Puerta de Enlace"
         string macAddress "Dirección MAC"
         string rackCabinet "Armario / Rack"
         string switchName "Switch Ref."
@@ -175,7 +177,7 @@ erDiagram
 * **Importación en 1 Clic**: Importa el cliente y sus sistemas técnicos registrados (CCTV, Intrusión, Incendio, Control de accesos) mapeándolos automáticamente a la estructura del inventario.
 
 ### 📷 Inventario Técnico Detallado de Dispositivos
-* Ficha técnica completa por equipo: Marca, Modelo, Nº de Serie, Dirección IP, Dirección MAC, Armario/Rack, Switch de conexión y Puerto de red.
+* Ficha técnica completa por equipo: Marca, Modelo, Nº de Serie, Configuración de Red (Dirección IP, Máscara de Subred, Puerta de Enlace / Gateway), Dirección MAC, Armario/Rack, Switch de conexión y Puerto de red.
 * **Estados y Distintivos**: Colores configurables (*Operativo*, *Falta instalación*, *En mantenimiento*, *Baja*).
 * **Filtros Avanzados**: Desplegables customizados (`CustomSelect`) con búsqueda integrada por Subsistema y Estado.
 
@@ -188,7 +190,8 @@ erDiagram
 * Cifrado en reposo simétrico con vector de inicialización (IV) único y verificación de integridad (GCM Tag).
 
 ### 📊 Importación y Exportación Masiva en Excel
-* **Plantilla Estructurada**: Descarga de plantilla `.xlsx` con 17 columnas alineadas y hoja adicional `"Guía de Campos"` con descripciones y ejemplos para CCTV, Red, Intrusión, Accesos e Interfonía.
+* **Plantilla Estructurada**: Descarga de plantilla `.xlsx` con 19 columnas alineadas y hoja adicional `"Guía de Campos"` con descripciones y ejemplos para CCTV, Red, Intrusión, Accesos e Interfonía.
+* **Detección Interactiva de Nuevos Catálogos**: Al importar, detecta automáticamente si el archivo contiene subsistemas o tipos de dispositivos no registrados y solicita confirmación al usuario antes de importarlos.
 * **Resolución Inteligente**: El importador realiza normalización sin distinción de mayúsculas, minúsculas, tildes o términos parciales para asignar automáticamente Subsistemas, Tipos y Estados existentes.
 
 ### 💾 Copias de Seguridad y Restauración
@@ -311,6 +314,7 @@ La API se documenta interactivamente en `/api/docs`. A continuación se resume l
 | | `GET` | `/api/v1/devices/:id/credentials` | Obtener credenciales descifradas (AES-256) |
 | | `PUT` | `/api/v1/devices/:id` | Actualizar datos del dispositivo |
 | | `DELETE` | `/api/v1/devices/:id` | Eliminar dispositivo |
+| | `DELETE` | `/api/v1/systems/:systemId/devices` | Eliminar todos los dispositivos de un sistema |
 | **Subsistemas** | `GET` | `/api/v1/subsystems` | Listado de subsistemas de seguridad |
 | | `POST` | `/api/v1/subsystems` | Crear nuevo subsistema |
 | **Tipos** | `GET` | `/api/v1/device-types` | Catálogo de tipos de equipo |
